@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lizto-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lizto
+      POSTGRES_USER: lizto
+      POSTGRES_PASSWORD: lizto
+    ports:
+      - "5432:5432"
+    volumes:
+      - lizto-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lizto -d lizto"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  lizto-postgres-data:

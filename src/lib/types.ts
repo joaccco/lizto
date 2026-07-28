@@ -14,6 +14,8 @@ export interface Provider {
   description: string;
   priceMin: number;
   priceMax: number;
+  priceFrom?: number;
+  priceTo?: number;
   distanceKm: number;
   etaMinutes: number;
   availableNow: boolean;
@@ -26,7 +28,7 @@ export interface ParsedRequest {
   urgency: Urgency;
   is_remote: boolean;
   requires_presence: boolean;
-  estimated_complexity: "low" | "medium" | "high";
+  estimated_complexity: "simple" | "low" | "medium" | "high";
   ambiguity_level: "low" | "medium" | "high";
   clarification_needed: string[];
   confidence: number;

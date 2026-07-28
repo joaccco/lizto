@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## API
+
+Este proyecto es el frontend web de Lizto. Consume una API REST externa en Laravel.
+
+Crear `.env.local` con:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+```
+
 ## Getting Started
 
 First, run the development server:

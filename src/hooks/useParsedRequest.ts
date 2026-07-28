@@ -2,6 +2,9 @@
 
 import { useCallback, useState } from "react";
 
+import { apiFetch } from "@/lib/api";
+import { ENDPOINTS } from "@/lib/endpoints";
+import { buildMockParseResponse } from "@/lib/mock-data";
 import { saveSearchSession } from "@/lib/storage";
 import type {
   ParseRequestResponse,
@@ -30,19 +33,10 @@ export function useParsedRequest(): UseParsedRequestResult {
     setError(null);
 
     try {
-      const response = await fetch("/api/parse-request", {
+      const data = await apiFetch<ParseRequestResponse>(ENDPOINTS.REQUEST_PARSE, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ prompt, urgency }),
       });
-
-      if (!response.ok) {
-        throw new Error("No pudimos interpretar tu solicitud. Intentá de nuevo.");
-      }
-
-      const data = (await response.json()) as ParseRequestResponse;
 
       setParsed(data.parsed_request);
       setProviders(data.providers);
@@ -50,6 +44,16 @@ export function useParsedRequest(): UseParsedRequestResult {
 
       return data;
     } catch (parseError) {
+      if (process.env.NODE_ENV !== "production") {
+        const data = buildMockParseResponse();
+
+        setParsed(data.parsed_request);
+        setProviders(data.providers);
+        saveSearchSession(data.parsed_request, data.providers);
+
+        return data;
+      }
+
       const message =
         parseError instanceof Error
           ? parseError.message
