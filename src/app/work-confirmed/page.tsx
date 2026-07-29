@@ -54,6 +54,7 @@ export default function WorkConfirmedPage() {
                     src={provider.photo}
                     alt={provider.name}
                     fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                     onError={() => setImageError(true)}
                   />

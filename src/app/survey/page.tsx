@@ -15,16 +15,17 @@ import type { ParsedRequest } from "@/lib/types";
 
 export default function SurveyPage() {
   const router = useRouter();
-  const { createRequest, submitSurvey, createMatchSession, isLoading, error } =
-    useServiceRequest();
+  const { createRequest, submitSurvey, createMatchSession } = useServiceRequest();
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [textInput, setTextInput] = useState("");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -40,13 +41,29 @@ export default function SurveyPage() {
         const parsedData = JSON.parse(stored);
         const parsedIntent: ParsedRequest = parsedData.parsed_request || parsedData;
 
-        // Call createRequest to get real survey questions from backend
-        const res = await createRequest(parsedIntent);
-        const fetchedQuestions = res?.suggested_questions || [];
+        // Step 1: Read suggested_questions immediately from sessionStorage for instant rendering (< 500ms)
+        const cachedQuestions: Question[] =
+          parsedData?.rawBackendData?.suggested_questions ||
+          parsedData?.data?.suggested_questions ||
+          [];
+
+        if (cachedQuestions.length > 0) {
+          setQuestions(cachedQuestions);
+          setIsLoadingQuestions(false);
+        }
+
+        // Step 2: In PARALLEL, create service request in background
+        const res = await createRequest(parsedIntent).catch((err) => {
+          console.error("Error creando request:", err);
+          return null;
+        });
 
         if (!isMounted) return;
 
-        if (fetchedQuestions.length === 0) {
+        const backendQuestions = res?.suggested_questions || [];
+        const finalQuestions = backendQuestions.length > 0 ? backendQuestions : cachedQuestions;
+
+        if (finalQuestions.length === 0) {
           // No questions required -> jump directly to matching
           setIsSubmitting(true);
           await submitSurvey([]);
@@ -55,13 +72,11 @@ export default function SurveyPage() {
           return;
         }
 
-        setQuestions(fetchedQuestions);
+        setQuestions(finalQuestions);
+        setIsLoadingQuestions(false);
       } catch (err) {
         console.warn("Error initializing survey:", err);
-        // Fallback: redirect to browse directly
         router.replace("/browse");
-      } finally {
-        if (isMounted) setIsInitializing(false);
       }
     }
 
@@ -103,8 +118,11 @@ export default function SurveyPage() {
         await submitSurvey(formattedAnswers);
         await createMatchSession();
         router.push("/browse");
-      } catch (err) {
-        console.error("Error submitting survey:", err);
+      } catch (err: any) {
+        const message = err?.errors
+          ? Object.values(err.errors).flat().join(', ')
+          : err?.message || 'Error al enviar la encuesta';
+        setError(message);
         setIsSubmitting(false);
       }
     }
@@ -118,7 +136,7 @@ export default function SurveyPage() {
     }
   };
 
-  if (isInitializing || isSubmitting) {
+  if (isLoadingQuestions || isSubmitting) {
     return (
       <ScreenShell className="flex items-center justify-center">
         <div className="text-center space-y-3">
@@ -170,6 +188,15 @@ export default function SurveyPage() {
             />
           </div>
         </div>
+
+        {/* Error Alert */}
+        {error && (
+          <div className="mt-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 p-3">
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {error}
+            </p>
+          </div>
+        )}
 
         {/* Question Title */}
         <div className="mt-8">

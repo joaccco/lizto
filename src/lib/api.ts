@@ -7,29 +7,38 @@ export async function apiFetch<T>(
   options?: RequestInit
 ): Promise<T> {
   const token = authStorage.getToken();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  const res = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
-  });
+  try {
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options?.headers,
+      },
+      ...options,
+    });
+    clearTimeout(timeoutId);
 
-  if (res.status === 401) {
-    authStorage.clear();
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
+    if (res.status === 401) {
+      authStorage.clear();
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      throw new Error("No autenticado");
     }
-    throw new Error("No autenticado");
-  }
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw error;
+    }
+
+    return res.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
     throw error;
   }
-
-  return res.json();
 }

@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sun, Monitor, Moon, LogOut, User, ShieldCheck } from "lucide-react";
+import { Sun, Monitor, Moon, LogOut, User, ShieldCheck, ClipboardList, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
@@ -160,6 +160,27 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
+
+            {/* My Requests Option */}
+            <Link
+              href="/my-requests"
+              className="p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition group"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-[#4F46E5] dark:text-indigo-400">
+                  <ClipboardList className="size-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    Mis solicitudes
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Ver tus búsquedas anteriores
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="size-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200" />
+            </Link>
 
             {/* Logout Option (only if authenticated) */}
             {isAuthenticated && (

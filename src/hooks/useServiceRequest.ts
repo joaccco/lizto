@@ -203,6 +203,7 @@ export function useServiceRequest() {
       const mappedCards: MatchCardData[] = rawCards.map((c) => {
         const pData = c.provider;
         let providerObj: Provider;
+
         if (pData.uuid && pData.categories) {
           providerObj = mapBackendProviderToFrontend(pData);
         } else {
@@ -239,6 +240,9 @@ export function useServiceRequest() {
           };
         }
 
+        (providerObj as any).card_id = c.card_id;
+        (providerObj as any).match_card_id = c.card_id;
+
         return {
           card_id: c.card_id,
           rank_position: c.rank_position,
@@ -254,9 +258,18 @@ export function useServiceRequest() {
 
       if (typeof window !== "undefined") {
         sessionStorage.setItem("match_session_id", newSessionId);
+        // FIX 3: Save full card objects (with card_id) not just the provider
         sessionStorage.setItem(
           "match_cards",
-          JSON.stringify(mappedCards.map((mc) => mc.provider))
+          JSON.stringify(
+            mappedCards.map((mc) => ({
+              card_id: mc.card_id,
+              rank_position: mc.rank_position,
+              score_total: mc.score_total,
+              card_status: mc.card_status,
+              provider: mc.provider,
+            }))
+          )
         );
       }
 

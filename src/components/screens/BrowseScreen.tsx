@@ -22,6 +22,14 @@ import { useServiceRequest } from "@/hooks/useServiceRequest";
 import { MOCK_PROVIDERS } from "@/lib/mock-data";
 import type { ParsedRequest, Provider } from "@/lib/types";
 
+interface StoredCard {
+  card_id: number;
+  rank_position: number;
+  score_total: number;
+  card_status: string;
+  provider: Provider;
+}
+
 export function BrowseScreen() {
   const router = useRouter();
   const { parsedRequest: defaultParsedRequest } = useBrowseSession();
@@ -30,7 +38,8 @@ export function BrowseScreen() {
   const [categorySlug, setCategorySlug] = useState<string | undefined>(undefined);
   const [parsedRequest, setParsedRequest] = useState<ParsedRequest>(defaultParsedRequest);
   const [matchSessionId, setMatchSessionId] = useState<string | null>(null);
-  const [sessionProviders, setSessionProviders] = useState<Provider[] | null>(null);
+  // FIX 3: Store full card objects with card_id, not just providers
+  const [sessionCards, setSessionCards] = useState<StoredCard[] | null>(null);
 
   useEffect(() => {
     try {
@@ -58,9 +67,16 @@ export function BrowseScreen() {
 
       const storedMatchCards = sessionStorage.getItem("match_cards");
       if (storedMatchCards) {
-        const parsedCards: Provider[] = JSON.parse(storedMatchCards);
-        if (parsedCards && parsedCards.length > 0) {
-          setSessionProviders(parsedCards);
+        const rawStored = JSON.parse(storedMatchCards);
+        if (rawStored && rawStored.length > 0) {
+          // FIX 3: Support both old format (plain providers) and new format (objects with card_id)
+          if (rawStored[0]?.card_id !== undefined) {
+            // New format: array of { card_id, provider, ... }
+            setSessionCards(rawStored as StoredCard[]);
+          } else {
+            // Old fallback: plain provider objects (no card_id available)
+            setSessionCards(null);
+          }
         }
       }
     } catch {
@@ -70,15 +86,21 @@ export function BrowseScreen() {
 
   const { providers: apiProviders, isLoading } = useProviders({ category: categorySlug });
 
+  // Build the providers list. When we have session cards, use their provider data.
   const providers = useMemo(() => {
-    if (sessionProviders && sessionProviders.length > 0) {
-      return sessionProviders;
+    if (sessionCards && sessionCards.length > 0) {
+      // Attach card_id directly on provider object so handleAccept/handleReject can read it
+      return sessionCards.map((sc) => ({
+        ...sc.provider,
+        card_id: sc.card_id,
+        match_card_id: sc.card_id,
+      })) as Provider[];
     }
     if (apiProviders && apiProviders.length > 0) {
       return apiProviders;
     }
     return MOCK_PROVIDERS;
-  }, [sessionProviders, apiProviders]);
+  }, [sessionCards, apiProviders]);
 
   const {
     current,
@@ -99,8 +121,16 @@ export function BrowseScreen() {
   const handleAccept = async () => {
     if (!current) return;
 
-    if (matchSessionId) {
-      await acceptCard(current.id);
+    const targetCardId = (current as any)?.card_id || (current as any)?.match_card_id;
+
+    // FIX 2: Debug logs
+    console.log("=== ACCEPT ===");
+    console.log("session uuid:", matchSessionId);
+    console.log("card completa:", current);
+    console.log("cardId a mandar:", targetCardId);
+
+    if (matchSessionId && targetCardId) {
+      await acceptCard(targetCardId);
     }
 
     sessionStorage.setItem("accepted_provider", JSON.stringify(current));
@@ -111,8 +141,16 @@ export function BrowseScreen() {
   const handleReject = async () => {
     if (!current) return;
 
-    if (matchSessionId) {
-      await rejectCard(current.id);
+    const targetCardId = (current as any)?.card_id || (current as any)?.match_card_id;
+
+    // FIX 2: Debug logs
+    console.log("=== REJECT ===");
+    console.log("session uuid:", matchSessionId);
+    console.log("card completa:", current);
+    console.log("cardId a mandar:", targetCardId);
+
+    if (matchSessionId && targetCardId) {
+      await rejectCard(targetCardId);
     }
 
     advanceReject();
@@ -154,17 +192,34 @@ export function BrowseScreen() {
               Buscando los mejores profesionales...
             </div>
           </div>
+        ) : providers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 text-center px-6 mt-8">
+            <div className="text-5xl mb-4">🔍</div>
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
+              No encontramos profesionales
+            </h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+              No hay profesionales disponibles para esta categoría en tu zona por el momento.
+            </p>
+            <button
+              onClick={() => router.push("/")}
+              className="bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-indigo-700 transition"
+            >
+              Buscar otro servicio
+            </button>
+          </div>
         ) : (
-          <CardStack cards={visibleCards} onAccept={handleAccept} onReject={handleReject} />
+          <>
+            <CardStack cards={visibleCards} onAccept={handleAccept} onReject={handleReject} />
+            <SwipeActions
+              onAccept={handleAccept}
+              onReject={handleReject}
+              onUndo={handleUndo}
+              canUndo={canUndo}
+              disabled={isEmpty || isLoading}
+            />
+          </>
         )}
-
-        <SwipeActions
-          onAccept={handleAccept}
-          onReject={handleReject}
-          onUndo={handleUndo}
-          canUndo={canUndo}
-          disabled={isEmpty || isLoading}
-        />
       </div>
     </ScreenShell>
   );

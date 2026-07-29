@@ -23,6 +23,15 @@ export function HomeScreen() {
   const handleSearch = async (prompt: string) => {
     resetError();
 
+    // FIX 1: Clear all previous search state to avoid stale card/session IDs
+    sessionStorage.removeItem("match_session_id");
+    sessionStorage.removeItem("match_session_uuid");
+    sessionStorage.removeItem("service_request_id");
+    sessionStorage.removeItem("service_request_uuid");
+    sessionStorage.removeItem("match_cards");
+    sessionStorage.removeItem("parsed_request");
+    sessionStorage.removeItem("accepted_provider");
+
     try {
       const result = await parse(prompt, urgency);
 
