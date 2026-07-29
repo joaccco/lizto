@@ -10,6 +10,7 @@ export const ENDPOINTS = {
   REQUEST_PARSE: "/requests/parse",
   REQUEST_SURVEY: (id: string) => `/requests/${id}/survey`,
   REQUEST_MATCH: (id: string) => `/requests/${id}/match`,
+  REQUESTS_CLEANUP: "/requests/cleanup",
 
   // Matching
   MATCH_SESSION: (id: string) => `/match-sessions/${id}`,
