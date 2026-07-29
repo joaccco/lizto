@@ -1,13 +1,55 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+
 import { RankedList } from "@/components/screens/fast-mode/RankedList";
 import { UrgencyBanner } from "@/components/screens/fast-mode/UrgencyBanner";
 import { ScreenShell } from "@/components/screens/shared/ScreenShell";
 import { TopBar } from "@/components/screens/shared/TopBar";
+import { useProviders } from "@/hooks/useProviders";
 import { useFastModeSession } from "@/hooks/useSearchSession";
+import { MOCK_PROVIDERS } from "@/lib/mock-data";
+import type { ParsedRequest } from "@/lib/types";
 
 export function FastModeScreen() {
-  const { parsedRequest, providers } = useFastModeSession();
+  const { parsedRequest: defaultParsedRequest } = useFastModeSession();
+  const [categorySlug, setCategorySlug] = useState<string | undefined>(undefined);
+  const [parsedRequest, setParsedRequest] = useState<ParsedRequest>(defaultParsedRequest);
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem("parsed_request");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const request: ParsedRequest = parsed.parsed_request || parsed;
+        const slug =
+          parsed.rawBackendData?.parsed_intent?.category_slug ||
+          request.categorySlug ||
+          request.category?.toLowerCase();
+
+        if (slug) {
+          setCategorySlug(slug);
+        }
+        if (request) {
+          setParsedRequest(request);
+        }
+      }
+    } catch {
+      // Use defaults on error
+    }
+  }, []);
+
+  const { providers: apiProviders } = useProviders({
+    category: categorySlug,
+    availability: "available",
+  });
+
+  const providers = useMemo(() => {
+    if (apiProviders && apiProviders.length > 0) {
+      return apiProviders;
+    }
+    return MOCK_PROVIDERS;
+  }, [apiProviders]);
 
   if (providers.length === 0) {
     return (
@@ -25,7 +67,7 @@ export function FastModeScreen() {
     <ScreenShell>
       <TopBar
         variant="back"
-        title={`${parsedRequest.category} ahora`}
+        title={`${parsedRequest.category || "Servicio"} ahora`}
         rightIcon="map"
       />
 

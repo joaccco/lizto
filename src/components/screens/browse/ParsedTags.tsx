@@ -8,11 +8,12 @@ const TAG_STYLES: Record<ParsedTag["type"], string> = {
   work: "border-zinc-200 bg-white text-zinc-600",
 };
 
-const URGENCY_LABELS = {
+const URGENCY_LABELS: Record<string, string> = {
   immediate: "Urgente",
   today: "Para hoy",
   scheduled: "Programado",
-} as const;
+  flexible: "Flexible",
+};
 
 export function buildParsedTags(parsed: ParsedRequest): ParsedTag[] {
   return [

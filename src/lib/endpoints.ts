@@ -9,6 +9,7 @@ export const ENDPOINTS = {
   REQUESTS: "/requests",
   REQUEST_PARSE: "/requests/parse",
   REQUEST_SURVEY: (id: string) => `/requests/${id}/survey`,
+  REQUEST_MATCH: (id: string) => `/requests/${id}/match`,
 
   // Matching
   MATCH_SESSION: (id: string) => `/match-sessions/${id}`,
@@ -18,6 +19,9 @@ export const ENDPOINTS = {
     `/match-sessions/${sessionId}/cards/${cardId}/reject`,
   CARD_RECOVER: (sessionId: string, cardId: string) =>
     `/match-sessions/${sessionId}/cards/${cardId}/recover`,
+
+  // Categories
+  CATEGORIES: "/categories",
 
   // Providers
   PROVIDERS: "/providers",

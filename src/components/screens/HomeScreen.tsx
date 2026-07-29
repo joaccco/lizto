@@ -9,6 +9,7 @@ import { SearchResultsSkeleton } from "@/components/screens/home/SearchResultsSk
 import { UrgencySelector } from "@/components/screens/home/UrgencySelector";
 import { ScreenShell } from "@/components/screens/shared/ScreenShell";
 import { TopBar } from "@/components/screens/shared/TopBar";
+import { useCategories } from "@/hooks/useCategories";
 import { useParsedRequest } from "@/hooks/useParsedRequest";
 import { MOCK_USER_NAME } from "@/lib/mock-data";
 import type { Urgency } from "@/lib/types";
@@ -17,19 +18,29 @@ export function HomeScreen() {
   const router = useRouter();
   const [urgency, setUrgency] = useState<Urgency>("today");
   const { parse, isLoading, error, resetError } = useParsedRequest();
+  const { categories, isLoading: categoriesLoading } = useCategories();
 
   const handleSearch = async (prompt: string) => {
     resetError();
 
     try {
-      await parse(prompt, urgency);
+      const result = await parse(prompt, urgency);
 
-      if (urgency === "immediate") {
+      // Save result in sessionStorage as requested
+      sessionStorage.setItem("parsed_request", JSON.stringify(result));
+
+      const parsed = result.parsed_request;
+      const suggestedQuestions = result.rawBackendData?.suggested_questions || [];
+      const hasClarification = parsed.clarification_needed && parsed.clarification_needed.length > 0;
+      const isLowConfidence = parsed.confidence !== undefined && parsed.confidence <= 0.85;
+
+      if (suggestedQuestions.length > 0 || hasClarification || isLowConfidence) {
+        router.push("/survey");
+      } else if (result.mode === "fast") {
         router.push("/fast-mode");
-        return;
+      } else {
+        router.push("/browse");
       }
-
-      router.push("/browse");
     } catch {
       // Error state handled by hook.
     }
@@ -87,7 +98,7 @@ export function HomeScreen() {
               Ver todos
             </button>
           </div>
-          <CategoryGrid />
+          <CategoryGrid categories={categories} />
         </section>
       )}
 

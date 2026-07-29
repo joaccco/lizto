@@ -1,4 +1,4 @@
-export type Urgency = "immediate" | "today" | "scheduled";
+export type Urgency = "immediate" | "today" | "scheduled" | "flexible";
 
 export interface Provider {
   id: string;
@@ -43,12 +43,103 @@ export interface ParsedRequest {
 
 export interface ParseRequestPayload {
   prompt: string;
-  urgency: Urgency;
+  urgency?: Urgency;
+  location?: {
+    lat: number;
+    lng: number;
+    address: string;
+  };
+}
+
+export interface BackendParsedIntent {
+  raw_intent: string;
+  category_slug: string | null;
+  category_id: number | null;
+  urgency: string;
+  is_remote: boolean;
+  requires_presence: boolean;
+  estimated_complexity: string;
+  ambiguity_level: string;
+  clarification_needed: string[];
+  confidence: number;
+  detected_keywords: string[];
+}
+
+export interface SuggestedQuestion {
+  key: string;
+  text: string;
+  input_type: string;
+  options: Array<{ value: string; label: string }> | null;
+  is_required: boolean;
+}
+
+export interface BackendParseRequestResponse {
+  data: {
+    parsed_intent: BackendParsedIntent;
+    suggested_questions: SuggestedQuestion[];
+    mode: "fast" | "browse" | "professional";
+  };
 }
 
 export interface ParseRequestResponse {
   parsed_request: ParsedRequest;
   providers: Provider[];
+  mode?: "fast" | "browse" | "professional";
+  rawBackendData?: BackendParseRequestResponse["data"];
+}
+
+export interface BackendCategoryItem {
+  id: string;
+  name: string;
+  slug: string;
+  specialties: string[];
+  price_type: string;
+  price_from: number | null;
+  price_to: number | null;
+}
+
+export interface BackendProvider {
+  uuid: string;
+  name: string;
+  avatar_url: string | null;
+  bio: string;
+  years_experience: number;
+  is_verified: boolean;
+  avg_rating: number;
+  total_reviews: number;
+  total_jobs_completed: number;
+  price_from: number | null;
+  availability_status: "available" | "busy" | "unavailable";
+  busy_until: string | null;
+  next_available_at: string | null;
+  distance_km: number | null;
+  categories: BackendCategoryItem[];
+}
+
+export interface BackendProvidersResponse {
+  data: BackendProvider[];
+  meta?: {
+    current_page: number;
+    total: number;
+    per_page: number;
+  };
+}
+
+export interface BackendCategory {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  children: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    icon: string | null;
+  }>;
+}
+
+export interface BackendCategoriesResponse {
+  data: BackendCategory[];
 }
 
 export interface ParsedTag {
@@ -76,4 +167,5 @@ export interface AuthResponse {
   };
   message: string;
 }
+
 
