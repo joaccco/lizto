@@ -43,10 +43,10 @@ export function HomeScreen() {
         <p className="text-sm font-medium text-[#4F46E5]">
           Hola, {MOCK_USER_NAME}
         </p>
-        <h2 className="max-w-sm text-[32px] leading-[1.08] font-semibold tracking-[-0.035em] text-zinc-950">
+        <h2 className="max-w-sm text-[32px] leading-[1.08] font-semibold tracking-[-0.035em] text-zinc-950 dark:text-zinc-100">
           ¿Qué necesitás resolver?
         </h2>
-        <p className="max-w-sm text-[15px] leading-6 text-zinc-500">
+        <p className="max-w-sm text-[15px] leading-6 text-zinc-500 dark:text-zinc-400">
           Contanos con tus palabras. Lizto entiende el contexto y encuentra a
           la persona indicada.
         </p>
@@ -63,7 +63,7 @@ export function HomeScreen() {
       </section>
 
       {error ? (
-        <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mt-4 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400">
           {error}
         </div>
       ) : null}
@@ -76,10 +76,10 @@ export function HomeScreen() {
         <section className="mt-10">
           <div className="mb-4 flex items-end justify-between">
             <div>
-              <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              <p className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400 uppercase">
                 Para empezar rápido
               </p>
-              <h3 className="mt-1 text-lg font-semibold tracking-tight text-zinc-950">
+              <h3 className="mt-1 text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-100">
                 Servicios populares
               </h3>
             </div>
@@ -91,7 +91,7 @@ export function HomeScreen() {
         </section>
       )}
 
-      <p className="mt-auto pt-8 text-center text-xs leading-5 text-zinc-400">
+      <p className="mt-auto pt-8 text-center text-xs leading-5 text-zinc-400 dark:text-zinc-500">
         Profesionales verificados · Buscar no tiene costo
       </p>
     </ScreenShell>

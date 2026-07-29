@@ -9,7 +9,7 @@ interface ScreenShellProps {
 
 export function ScreenShell({ children, className }: ScreenShellProps) {
   return (
-    <div className="min-h-dvh bg-[#F7F7F5]">
+    <div className="min-h-dvh bg-[#F7F7F5] dark:bg-zinc-900">
       <div
         className={cn(
           "mx-auto flex min-h-dvh w-full max-w-[480px] flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom))]",
@@ -21,3 +21,4 @@ export function ScreenShell({ children, className }: ScreenShellProps) {
     </div>
   );
 }
+

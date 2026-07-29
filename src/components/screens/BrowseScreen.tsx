@@ -38,7 +38,7 @@ export function BrowseScreen() {
     return (
       <ScreenShell>
         <TopBar variant="back" title="Explorar" rightIcon="none" />
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mt-6 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400">
           No pudimos cargar los resultados. Volvé al inicio e intentá de nuevo.
         </div>
       </ScreenShell>
@@ -57,10 +57,10 @@ export function BrowseScreen() {
         <AIInterpretationBanner summary={parsedRequest.summary} />
         <ParsedTags tags={tags} />
         <div className="flex items-center justify-between pt-1">
-          <p className="text-xs font-medium text-zinc-500">
+          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
             Mejor coincidencia primero
           </p>
-          <p className="text-xs tabular-nums text-zinc-400">
+          <p className="text-xs tabular-nums text-zinc-400 dark:text-zinc-500">
             {Math.min(currentIndex + 1, providers.length)} de {providers.length}
           </p>
         </div>

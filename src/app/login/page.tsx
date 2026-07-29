@@ -24,34 +24,34 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 px-4">
+    <main className="min-h-screen bg-slate-50 dark:bg-zinc-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 px-4">
       <div className="sm:mx-auto sm:w-full sm:max-w-[400px]">
         {/* Logo */}
         <div className="flex justify-center text-center">
           <Link href="/" className="inline-flex items-center text-3xl font-extrabold tracking-tight">
-            <span className="text-slate-900">Liz</span>
+            <span className="text-slate-900 dark:text-zinc-100">Liz</span>
             <span className="text-[#4F46E5]">to</span>
           </Link>
         </div>
-        <h2 className="mt-4 text-center text-2xl font-bold tracking-tight text-slate-900">
+        <h2 className="mt-4 text-center text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
           Bienvenido de nuevo
         </h2>
-        <p className="mt-1 text-center text-sm text-slate-500">
+        <p className="mt-1 text-center text-sm text-slate-500 dark:text-zinc-400">
           Iniciá sesión para acceder a tu cuenta
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-[400px]">
-        <div className="bg-white py-8 px-6 shadow-sm border border-slate-200 rounded-2xl">
+        <div className="bg-white dark:bg-zinc-800 py-8 px-6 shadow-sm border border-slate-200 dark:border-zinc-700/60 rounded-2xl">
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600 font-medium">
+            <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-xs text-red-600 dark:text-red-400 font-medium">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="email" className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
                 Correo electrónico
               </label>
               <input
@@ -61,12 +61,12 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
-                className="w-full h-10 px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition"
+                className="w-full h-10 px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-xs font-semibold text-slate-700 mb-1">
+              <label htmlFor="password" className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1">
                 Contraseña
               </label>
               <div className="relative">
@@ -77,12 +77,12 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-10 pl-3 pr-10 py-2 text-sm rounded-lg border border-slate-300 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition"
+                  className="w-full h-10 pl-3 pr-10 py-2 text-sm rounded-lg border border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300 focus:outline-none"
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
@@ -106,7 +106,7 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 text-center text-xs">
-            <span className="text-slate-500">¿No tenés cuenta? </span>
+            <span className="text-slate-500 dark:text-zinc-400">¿No tenés cuenta? </span>
             <Link href="/register" className="font-semibold text-[#4F46E5] hover:underline">
               Registrate
             </Link>
