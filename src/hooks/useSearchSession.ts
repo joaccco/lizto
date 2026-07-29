@@ -7,7 +7,10 @@ import {
   getProvidersByCategorySlug,
   getRankedUrgentProviders,
 } from "@/lib/mock-data";
-import { loadParsedRequest, loadProviders } from "@/lib/storage";
+import {
+  loadSearchSession,
+  subscribeSearchSession,
+} from "@/lib/storage";
 import type { ParsedRequest, Provider } from "@/lib/types";
 
 interface BrowseSessionData {
@@ -15,33 +18,28 @@ interface BrowseSessionData {
   providers: Provider[];
 }
 
-function getBrowseSnapshot(): BrowseSessionData {
-  const storedParsed = loadParsedRequest();
-  const storedProviders = loadProviders();
+const BROWSE_FALLBACK: BrowseSessionData = {
+  parsedRequest: EXAMPLE_PARSED_REQUEST,
+  providers: getProvidersByCategorySlug(EXAMPLE_PARSED_REQUEST.categorySlug),
+};
 
-  if (storedParsed && storedProviders.length > 0) {
-    return {
-      parsedRequest: storedParsed,
-      providers: storedProviders,
-    };
+function getBrowseSnapshot(): BrowseSessionData {
+  const storedSession = loadSearchSession();
+
+  if (storedSession && storedSession.providers.length > 0) {
+    return storedSession;
   }
 
-  return {
-    parsedRequest: EXAMPLE_PARSED_REQUEST,
-    providers: getProvidersByCategorySlug(EXAMPLE_PARSED_REQUEST.categorySlug),
-  };
+  return BROWSE_FALLBACK;
 }
 
 function getBrowseServerSnapshot(): BrowseSessionData {
-  return {
-    parsedRequest: EXAMPLE_PARSED_REQUEST,
-    providers: getProvidersByCategorySlug(EXAMPLE_PARSED_REQUEST.categorySlug),
-  };
+  return BROWSE_FALLBACK;
 }
 
 export function useBrowseSession(): BrowseSessionData {
   return useSyncExternalStore(
-    () => () => undefined,
+    subscribeSearchSession,
     getBrowseSnapshot,
     getBrowseServerSnapshot
   );
@@ -68,32 +66,41 @@ const FAST_MODE_FALLBACK: ParsedRequest = {
   location: "CABA",
 };
 
+const FAST_MODE_SERVER_SNAPSHOT: FastModeSessionData = {
+  parsedRequest: FAST_MODE_FALLBACK,
+  providers: getRankedUrgentProviders("cerrajeria"),
+};
+
+let cachedFastParsedRequest: ParsedRequest | null = null;
+let cachedFastSnapshot: FastModeSessionData | null = null;
+
 function getFastModeSnapshot(): FastModeSessionData {
-  const storedParsed = loadParsedRequest();
+  const storedSession = loadSearchSession();
+  const storedParsed = storedSession?.parsedRequest;
 
   if (storedParsed) {
-    return {
+    if (storedParsed === cachedFastParsedRequest && cachedFastSnapshot) {
+      return cachedFastSnapshot;
+    }
+
+    cachedFastParsedRequest = storedParsed;
+    cachedFastSnapshot = {
       parsedRequest: storedParsed,
       providers: getRankedUrgentProviders(storedParsed.categorySlug),
     };
+    return cachedFastSnapshot;
   }
 
-  return {
-    parsedRequest: FAST_MODE_FALLBACK,
-    providers: getRankedUrgentProviders("cerrajeria"),
-  };
+  return FAST_MODE_SERVER_SNAPSHOT;
 }
 
 function getFastModeServerSnapshot(): FastModeSessionData {
-  return {
-    parsedRequest: FAST_MODE_FALLBACK,
-    providers: getRankedUrgentProviders("cerrajeria"),
-  };
+  return FAST_MODE_SERVER_SNAPSHOT;
 }
 
 export function useFastModeSession(): FastModeSessionData {
   return useSyncExternalStore(
-    () => () => undefined,
+    subscribeSearchSession,
     getFastModeSnapshot,
     getFastModeServerSnapshot
   );

@@ -1,4 +1,4 @@
-import { Zap } from "lucide-react";
+import { LocateFixed } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,15 +10,21 @@ export function UrgencyBanner({ className }: UrgencyBannerProps) {
   return (
     <div
       className={cn(
-        "flex items-start gap-2 rounded-2xl border border-red-200 bg-[#FEF2F2] px-4 py-3",
+        "flex items-start gap-3 rounded-2xl border border-indigo-100 bg-[#F1F0FF] px-4 py-3.5",
         className
       )}
     >
-      <Zap className="mt-0.5 size-4 shrink-0 text-red-600" />
-      <p className="text-sm text-red-900">
-        <span className="font-medium">Modo urgente.</span> Los más cercanos
-        disponibles ahora.
-      </p>
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-[#4F46E5]">
+        <LocateFixed className="size-4" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-indigo-950">
+          Encontramos ayuda cerca
+        </p>
+        <p className="mt-0.5 text-xs leading-5 text-indigo-700">
+          Ordenamos por llegada, disponibilidad y reputación.
+        </p>
+      </div>
     </div>
   );
 }

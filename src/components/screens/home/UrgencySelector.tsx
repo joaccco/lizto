@@ -9,7 +9,7 @@ interface UrgencyOption {
   value: Urgency;
   label: string;
   icon: typeof Zap;
-  activeClassName: string;
+  hint: string;
 }
 
 const URGENCY_OPTIONS: UrgencyOption[] = [
@@ -17,19 +17,19 @@ const URGENCY_OPTIONS: UrgencyOption[] = [
     value: "immediate",
     label: "Ahora",
     icon: Zap,
-    activeClassName: "border-red-200 bg-red-50 text-red-700",
+    hint: "Lo antes posible",
   },
   {
     value: "today",
     label: "Hoy",
     icon: Sun,
-    activeClassName: "border-amber-200 bg-amber-50 text-amber-700",
+    hint: "En el día",
   },
   {
     value: "scheduled",
     label: "Programar",
     icon: Calendar,
-    activeClassName: "border-[#C7D2FE] bg-[#EEF2FF] text-[#4F46E5]",
+    hint: "Elegir fecha",
   },
 ];
 
@@ -45,7 +45,7 @@ export function UrgencySelector({
   className,
 }: UrgencySelectorProps) {
   return (
-    <div className={cn("flex gap-2", className)}>
+    <div className={cn("grid grid-cols-3 gap-2", className)}>
       {URGENCY_OPTIONS.map((option) => {
         const Icon = option.icon;
         const isActive = value === option.value;
@@ -56,14 +56,19 @@ export function UrgencySelector({
             type="button"
             onClick={() => onChange(option.value)}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-xs font-medium transition-colors",
+              "flex min-h-16 flex-col items-start justify-center gap-1 rounded-2xl border px-3 py-2.5 text-left transition-colors",
               isActive
-                ? option.activeClassName
-                : "border-[#E5E7EB] bg-white text-gray-600"
+                ? "border-zinc-950 bg-zinc-950 text-white"
+                : "border-[#E4E4E0] bg-white text-zinc-600 hover:border-zinc-300"
             )}
           >
-            <Icon className="size-3.5" />
-            {option.label}
+            <span className="flex items-center gap-1.5 text-xs font-semibold">
+              <Icon className={cn("size-3.5", option.value === "immediate" && !isActive ? "text-red-500" : "")} />
+              {option.label}
+            </span>
+            <span className={cn("text-[10px]", isActive ? "text-zinc-300" : "text-zinc-400")}>
+              {option.hint}
+            </span>
           </button>
         );
       })}

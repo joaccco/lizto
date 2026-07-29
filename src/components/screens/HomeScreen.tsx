@@ -39,16 +39,27 @@ export function HomeScreen() {
     <ScreenShell>
       <TopBar />
 
-      <section className="mt-2 space-y-1">
-        <h2 className="text-xl font-medium text-gray-900">
+      <section className="mt-5 space-y-3">
+        <p className="text-sm font-medium text-[#4F46E5]">
           Hola, {MOCK_USER_NAME}
+        </p>
+        <h2 className="max-w-sm text-[32px] leading-[1.08] font-semibold tracking-[-0.035em] text-zinc-950">
+          ¿Qué necesitás resolver?
         </h2>
-        <p className="text-sm text-gray-500">¿Qué necesitás resolver hoy?</p>
+        <p className="max-w-sm text-[15px] leading-6 text-zinc-500">
+          Contanos con tus palabras. Lizto entiende el contexto y encuentra a
+          la persona indicada.
+        </p>
       </section>
 
-      <section className="mt-6 space-y-4">
+      <section className="mt-7 space-y-5">
         <SearchBox onSubmit={handleSearch} isLoading={isLoading} />
-        <UrgencySelector value={urgency} onChange={setUrgency} />
+        <div className="space-y-2.5">
+          <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+            ¿Para cuándo?
+          </p>
+          <UrgencySelector value={urgency} onChange={setUrgency} />
+        </div>
       </section>
 
       {error ? (
@@ -62,13 +73,27 @@ export function HomeScreen() {
           <SearchResultsSkeleton />
         </section>
       ) : (
-        <section className="mt-8">
-          <h3 className="mb-3 text-sm font-medium text-gray-900">
-            Categorías populares
-          </h3>
+        <section className="mt-10">
+          <div className="mb-4 flex items-end justify-between">
+            <div>
+              <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                Para empezar rápido
+              </p>
+              <h3 className="mt-1 text-lg font-semibold tracking-tight text-zinc-950">
+                Servicios populares
+              </h3>
+            </div>
+            <button className="text-xs font-semibold text-[#4F46E5]" type="button">
+              Ver todos
+            </button>
+          </div>
           <CategoryGrid />
         </section>
       )}
+
+      <p className="mt-auto pt-8 text-center text-xs leading-5 text-zinc-400">
+        Profesionales verificados · Buscar no tiene costo
+      </p>
     </ScreenShell>
   );
 }

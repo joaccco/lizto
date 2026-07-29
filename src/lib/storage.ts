@@ -2,6 +2,16 @@ import type { ParsedRequest, Provider } from "@/lib/types";
 
 const PARSED_REQUEST_KEY = "lizto:parsed-request";
 const PROVIDERS_KEY = "lizto:providers";
+const SESSION_CHANGE_EVENT = "lizto:session-change";
+
+export interface SearchSession {
+  parsedRequest: ParsedRequest;
+  providers: Provider[];
+}
+
+let cachedParsedRaw: string | null = null;
+let cachedProvidersRaw: string | null = null;
+let cachedSession: SearchSession | null = null;
 
 export function saveSearchSession(
   parsedRequest: ParsedRequest,
@@ -13,40 +23,52 @@ export function saveSearchSession(
 
   sessionStorage.setItem(PARSED_REQUEST_KEY, JSON.stringify(parsedRequest));
   sessionStorage.setItem(PROVIDERS_KEY, JSON.stringify(providers));
+  window.dispatchEvent(new Event(SESSION_CHANGE_EVENT));
 }
 
-export function loadParsedRequest(): ParsedRequest | null {
+export function loadSearchSession(): SearchSession | null {
   if (typeof window === "undefined") {
     return null;
   }
 
-  const raw = sessionStorage.getItem(PARSED_REQUEST_KEY);
+  const parsedRaw = sessionStorage.getItem(PARSED_REQUEST_KEY);
+  const providersRaw = sessionStorage.getItem(PROVIDERS_KEY);
 
-  if (!raw) {
+  if (!parsedRaw || !providersRaw) {
     return null;
   }
 
+  if (
+    cachedSession &&
+    parsedRaw === cachedParsedRaw &&
+    providersRaw === cachedProvidersRaw
+  ) {
+    return cachedSession;
+  }
+
   try {
-    return JSON.parse(raw) as ParsedRequest;
+    cachedSession = {
+      parsedRequest: JSON.parse(parsedRaw) as ParsedRequest,
+      providers: JSON.parse(providersRaw) as Provider[],
+    };
+    cachedParsedRaw = parsedRaw;
+    cachedProvidersRaw = providersRaw;
+    return cachedSession;
   } catch {
     return null;
   }
 }
 
-export function loadProviders(): Provider[] {
+export function subscribeSearchSession(onChange: () => void): () => void {
   if (typeof window === "undefined") {
-    return [];
+    return () => undefined;
   }
 
-  const raw = sessionStorage.getItem(PROVIDERS_KEY);
+  window.addEventListener(SESSION_CHANGE_EVENT, onChange);
+  window.addEventListener("storage", onChange);
 
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    return JSON.parse(raw) as Provider[];
-  } catch {
-    return [];
-  }
+  return () => {
+    window.removeEventListener(SESSION_CHANGE_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
 }

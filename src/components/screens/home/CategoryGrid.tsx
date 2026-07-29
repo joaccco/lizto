@@ -18,17 +18,18 @@ interface CategoryItem {
   slug: string;
   label: string;
   icon: typeof Camera;
+  hint: string;
 }
 
 const CATEGORIES: CategoryItem[] = [
-  { slug: "cerrajeria", label: "Cerrajería", icon: Key },
-  { slug: "electricista", label: "Electricista", icon: Zap },
-  { slug: "plomeria", label: "Plomería", icon: Droplets },
-  { slug: "fotografia", label: "Fotografía", icon: Camera },
-  { slug: "abogado", label: "Abogado", icon: Scale },
-  { slug: "contador", label: "Contador", icon: Calculator },
-  { slug: "diseno", label: "Diseño", icon: Palette },
-  { slug: "ver-mas", label: "Ver más", icon: Grid2x2 },
+  { slug: "cerrajeria", label: "Cerrajería", hint: "Aperturas y llaves", icon: Key },
+  { slug: "electricista", label: "Electricidad", hint: "Hogar y comercios", icon: Zap },
+  { slug: "plomeria", label: "Plomería", hint: "Pérdidas y arreglos", icon: Droplets },
+  { slug: "fotografia", label: "Fotografía", hint: "Eventos y producto", icon: Camera },
+  { slug: "abogado", label: "Abogacía", hint: "Consulta profesional", icon: Scale },
+  { slug: "contador", label: "Contabilidad", hint: "Impuestos y gestión", icon: Calculator },
+  { slug: "diseno", label: "Diseño", hint: "Marca y comunicación", icon: Palette },
+  { slug: "ver-mas", label: "Más servicios", hint: "Ver categorías", icon: Grid2x2 },
 ];
 
 interface CategoryGridProps {
@@ -39,7 +40,7 @@ export function CategoryGrid({ className }: CategoryGridProps) {
   const router = useRouter();
 
   return (
-    <div className={cn("grid grid-cols-4 gap-3", className)}>
+    <div className={cn("grid grid-cols-2 gap-2.5", className)}>
       {CATEGORIES.map((category) => {
         const Icon = category.icon;
 
@@ -48,13 +49,18 @@ export function CategoryGrid({ className }: CategoryGridProps) {
             key={category.slug}
             type="button"
             onClick={() => router.push(`/search?category=${category.slug}`)}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-[#E5E7EB] bg-white px-2 py-3 text-center transition-colors hover:border-[#C7D2FE]"
+            className="group flex items-center gap-3 rounded-2xl border border-[#E4E4E0] bg-white p-3 text-left transition-colors hover:border-indigo-200 hover:bg-indigo-50/30"
           >
-            <div className="flex size-10 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4F46E5]">
-              <Icon className="size-5" />
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#F1F0FF] text-[#4F46E5] transition-colors group-hover:bg-indigo-100">
+              <Icon className="size-[18px]" />
             </div>
-            <span className="text-[11px] leading-tight font-medium text-gray-700">
-              {category.label}
+            <span className="min-w-0">
+              <span className="block truncate text-xs font-semibold text-zinc-800">
+                {category.label}
+              </span>
+              <span className="mt-0.5 block truncate text-[10px] text-zinc-400">
+                {category.hint}
+              </span>
             </span>
           </button>
         );

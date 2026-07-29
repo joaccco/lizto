@@ -22,36 +22,45 @@ export function SwipeActions({
   className,
 }: SwipeActionsProps) {
   return (
-    <div className={cn("flex items-center justify-center gap-5", className)}>
-      <button
-        type="button"
-        onClick={onReject}
-        disabled={disabled}
-        className="flex size-14 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 disabled:opacity-40"
-        aria-label="Rechazar"
-      >
-        <X className="size-6" />
-      </button>
+    <div className={cn("grid grid-cols-3 items-start gap-4 px-4", className)}>
+      <div className="flex flex-col items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onReject}
+          disabled={disabled}
+          className="flex size-13 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50 disabled:opacity-40"
+          aria-label="Descartar profesional"
+        >
+          <X className="size-5" />
+        </button>
+        <span className="text-[10px] font-medium text-zinc-400">Pasar</span>
+      </div>
 
-      <button
-        type="button"
-        onClick={onUndo}
-        disabled={!canUndo || disabled}
-        className="flex size-12 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-gray-600 disabled:opacity-40"
-        aria-label="Deshacer"
-      >
-        <RotateCcw className="size-5" />
-      </button>
+      <div className="flex flex-col items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onUndo}
+          disabled={!canUndo || disabled}
+          className="flex size-11 items-center justify-center rounded-full border border-zinc-200 bg-transparent text-zinc-500 transition hover:bg-white disabled:opacity-30"
+          aria-label="Recuperar profesional anterior"
+        >
+          <RotateCcw className="size-4" />
+        </button>
+        <span className="text-[10px] font-medium text-zinc-400">Volver</span>
+      </div>
 
-      <button
-        type="button"
-        onClick={onAccept}
-        disabled={disabled}
-        className="flex size-14 items-center justify-center rounded-full border border-[#C7D2FE] bg-[#4F46E5] text-white disabled:opacity-40"
-        aria-label="Aceptar"
-      >
-        <Check className="size-6" />
-      </button>
+      <div className="flex flex-col items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onAccept}
+          disabled={disabled}
+          className="flex size-13 items-center justify-center rounded-full bg-[#4F46E5] text-white transition hover:bg-indigo-700 disabled:opacity-40"
+          aria-label="Elegir profesional"
+        >
+          <Check className="size-5" />
+        </button>
+        <span className="text-[10px] font-semibold text-[#4F46E5]">Elegir</span>
+      </div>
     </div>
   );
 }

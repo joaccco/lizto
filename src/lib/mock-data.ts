@@ -25,8 +25,11 @@ export const MOCK_PROVIDERS: Provider[] = [
     id: "1",
     name: "Roberto Medina",
     initials: "RM",
+    photo: "/providers/roberto-medina-v2.png",
     category: "Cerrajería",
     categorySlug: "cerrajeria",
+    specialties: ["Aperturas", "Cerraduras de seguridad"],
+    neighborhood: "Palermo",
     rating: 4.9,
     reviewCount: 87,
     jobsCompleted: 124,
@@ -47,8 +50,11 @@ export const MOCK_PROVIDERS: Provider[] = [
     id: "2",
     name: "Diego Fernández",
     initials: "DF",
+    photo: "/providers/diego-fernandez-v2.png",
     category: "Cerrajería",
     categorySlug: "cerrajeria",
+    specialties: ["Cerrajería 24 h", "Automotor"],
+    neighborhood: "Villa Crespo",
     rating: 4.6,
     reviewCount: 43,
     jobsCompleted: 67,
@@ -68,8 +74,11 @@ export const MOCK_PROVIDERS: Provider[] = [
     id: "3",
     name: "Ana Kupfer",
     initials: "AK",
+    photo: "/providers/ana-kupfer-v2.png",
     category: "Cerrajería",
     categorySlug: "cerrajeria",
+    specialties: ["Cerraduras digitales", "Aperturas"],
+    neighborhood: "Recoleta",
     rating: 4.7,
     reviewCount: 61,
     jobsCompleted: 89,
@@ -120,12 +129,21 @@ export function getRankedUrgentProviders(categorySlug?: string): Provider[] {
     .slice(0, 3);
 }
 
-export function buildMockParseResponse(): {
+export function buildMockParseResponse(
+  prompt = MOCK_PARSED_REQUEST.raw_intent,
+  urgency: ParsedRequest["urgency"] = MOCK_PARSED_REQUEST.urgency
+): {
   parsed_request: ParsedRequest;
   providers: Provider[];
 } {
+  const parsedRequest = {
+    ...MOCK_PARSED_REQUEST,
+    raw_intent: prompt,
+    urgency,
+  };
+
   return {
-    parsed_request: MOCK_PARSED_REQUEST,
-    providers: getRankedUrgentProviders(MOCK_PARSED_REQUEST.categorySlug),
+    parsed_request: parsedRequest,
+    providers: getRankedUrgentProviders(parsedRequest.categorySlug),
   };
 }

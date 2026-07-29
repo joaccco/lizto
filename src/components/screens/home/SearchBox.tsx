@@ -1,10 +1,8 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { ArrowUp, Sparkles } from "lucide-react";
 import { FormEvent, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 interface SearchBoxProps {
@@ -35,24 +33,38 @@ export function SearchBox({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={cn("space-y-2", className)}>
-      <div className="relative">
-        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" />
-        <Input
+    <form onSubmit={handleSubmit} className={cn("space-y-2.5", className)}>
+      <div className="rounded-[22px] border border-zinc-300 bg-white p-3 transition focus-within:border-[#4F46E5] focus-within:ring-4 focus-within:ring-indigo-100">
+        <label htmlFor="service-request" className="sr-only">
+          Describí el servicio que necesitás
+        </label>
+        <textarea
+          id="service-request"
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
-          placeholder="Describí lo que necesitás..."
+          placeholder="Ej: Me quedé afuera de casa y necesito un cerrajero ahora"
           disabled={isLoading || disabled}
-          className="h-12 rounded-2xl border-[#E5E7EB] bg-white pl-10 text-sm text-gray-900 placeholder:text-gray-400"
+          rows={3}
+          className="min-h-20 w-full resize-none bg-transparent px-1 py-1 text-base leading-6 text-zinc-900 outline-none placeholder:text-zinc-400"
         />
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-1.5 pl-1 text-xs font-medium text-[#4F46E5]">
+            <Sparkles className="size-3.5" />
+            Lizto entiende tu pedido
+          </span>
+          <button
+            type="submit"
+            disabled={!prompt.trim() || isLoading || disabled}
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
+            aria-label="Buscar profesionales"
+          >
+            <ArrowUp className="size-4" />
+          </button>
+        </div>
       </div>
-
-      <Badge
-        variant="secondary"
-        className="rounded-full border border-[#C7D2FE] bg-[#EEF2FF] px-3 py-1 text-xs font-medium text-[#4F46E5]"
-      >
-        ✦ IA interpreta tu solicitud
-      </Badge>
+      <p className="px-1 text-xs text-zinc-400">
+        No hace falta que sepas qué profesional buscar.
+      </p>
     </form>
   );
 }

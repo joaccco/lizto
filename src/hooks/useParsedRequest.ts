@@ -45,7 +45,7 @@ export function useParsedRequest(): UseParsedRequestResult {
       return data;
     } catch (parseError) {
       if (process.env.NODE_ENV !== "production") {
-        const data = buildMockParseResponse();
+        const data = buildMockParseResponse(prompt, urgency);
 
         setParsed(data.parsed_request);
         setProviders(data.providers);

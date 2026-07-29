@@ -1,6 +1,5 @@
 "use client";
 
-import { PrimaryAction } from "@/components/screens/fast-mode/PrimaryAction";
 import { RankedList } from "@/components/screens/fast-mode/RankedList";
 import { UrgencyBanner } from "@/components/screens/fast-mode/UrgencyBanner";
 import { ScreenShell } from "@/components/screens/shared/ScreenShell";
@@ -22,20 +21,17 @@ export function FastModeScreen() {
     );
   }
 
-  const topProvider = providers[0];
-
   return (
     <ScreenShell>
       <TopBar
         variant="back"
-        title={`${parsedRequest.category} · urgente`}
+        title={`${parsedRequest.category} ahora`}
         rightIcon="map"
       />
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <UrgencyBanner />
         <RankedList providers={providers} />
-        <PrimaryAction topProvider={topProvider} providers={providers} />
       </div>
     </ScreenShell>
   );

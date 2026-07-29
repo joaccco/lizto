@@ -4,8 +4,11 @@ export interface Provider {
   id: string;
   name: string;
   initials: string;
+  photo: string;
   category: string;
   categorySlug: string;
+  specialties: string[];
+  neighborhood: string;
   rating: number;
   reviewCount: number;
   jobsCompleted: number;
@@ -53,3 +56,24 @@ export interface ParsedTag {
   label: string;
   type: "category" | "location" | "urgency" | "work";
 }
+
+export interface User {
+  id: string; // uuid
+  name: string;
+  email: string;
+  phone: string | null;
+  avatar_url: string | null;
+  status: string;
+  roles: string[];
+  has_provider_profile: boolean;
+  created_at: string;
+}
+
+export interface AuthResponse {
+  data: {
+    user: User;
+    token: string;
+  };
+  message: string;
+}
+

@@ -21,6 +21,7 @@ export function BrowseScreen() {
 
   const {
     visibleCards,
+    currentIndex,
     accept,
     reject,
     undo,
@@ -48,14 +49,22 @@ export function BrowseScreen() {
     <ScreenShell>
       <TopBar
         variant="back"
-        title={`${parsedRequest.category} · ${providers.length} resultados`}
+        title={`${providers.length} profesionales para vos`}
         rightIcon="filter"
       />
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <AIInterpretationBanner summary={parsedRequest.summary} />
         <ParsedTags tags={tags} />
-        <CardStack cards={visibleCards} />
+        <div className="flex items-center justify-between pt-1">
+          <p className="text-xs font-medium text-zinc-500">
+            Mejor coincidencia primero
+          </p>
+          <p className="text-xs tabular-nums text-zinc-400">
+            {Math.min(currentIndex + 1, providers.length)} de {providers.length}
+          </p>
+        </div>
+        <CardStack cards={visibleCards} onAccept={accept} onReject={reject} />
         <SwipeActions
           onAccept={accept}
           onReject={reject}

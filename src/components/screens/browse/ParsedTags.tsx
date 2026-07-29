@@ -2,10 +2,10 @@ import type { ParsedRequest, ParsedTag } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const TAG_STYLES: Record<ParsedTag["type"], string> = {
-  category: "border-[#C7D2FE] bg-[#EEF2FF] text-[#4F46E5]",
-  location: "border-green-200 bg-green-50 text-green-700",
-  urgency: "border-red-200 bg-red-50 text-red-700",
-  work: "border-gray-200 bg-gray-50 text-gray-700",
+  category: "border-indigo-200 bg-indigo-50 text-indigo-700",
+  location: "border-zinc-200 bg-white text-zinc-600",
+  urgency: "border-zinc-200 bg-white text-zinc-600",
+  work: "border-zinc-200 bg-white text-zinc-600",
 };
 
 const URGENCY_LABELS = {
@@ -56,7 +56,7 @@ export function ParsedTags({ tags, className }: ParsedTagsProps) {
         <span
           key={tag.id}
           className={cn(
-            "shrink-0 rounded-full border px-3 py-1 text-xs font-medium",
+            "shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-medium",
             TAG_STYLES[tag.type]
           )}
         >
