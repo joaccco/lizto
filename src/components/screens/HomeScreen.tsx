@@ -1,14 +1,13 @@
 "use client";
 
+import { Bell, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import { CategoryGrid } from "@/components/screens/home/CategoryGrid";
 import { SearchBox } from "@/components/screens/home/SearchBox";
 import { SearchResultsSkeleton } from "@/components/screens/home/SearchResultsSkeleton";
-import { UrgencySelector } from "@/components/screens/home/UrgencySelector";
-import { ScreenShell } from "@/components/screens/shared/ScreenShell";
-import { TopBar } from "@/components/screens/shared/TopBar";
+import { UrgencyChips } from "@/components/screens/home/UrgencyChips";
 import { useCategories } from "@/hooks/useCategories";
 import { useParsedRequest } from "@/hooks/useParsedRequest";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,7 +20,7 @@ export function HomeScreen() {
   const [prompt, setPrompt] = useState("");
   const [urgency, setUrgency] = useState<Urgency>("today");
   const { parse, isLoading, error, resetError } = useParsedRequest();
-  const { categories, isLoading: categoriesLoading } = useCategories();
+  const { categories } = useCategories();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSearch = async (searchPrompt: string) => {
@@ -53,70 +52,108 @@ export function HomeScreen() {
         router.push("/browse");
       }
     } catch {
-      // Error state handled by hook.
+      // Error handled by hook
     }
   };
 
   const handleSelectCategory = (catName: string) => {
     setPrompt(`Necesito ayuda con ${catName}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setTimeout(() => {
       textareaRef.current?.focus();
-    }, 50);
+    }, 150);
   };
 
   return (
-    <ScreenShell>
-      <TopBar />
-
-      <section className="mt-5 space-y-3">
-        <p className="text-sm font-medium text-[#4F46E5]">
-          Hola, {firstName}
-        </p>
-        <h2 className="max-w-sm text-[32px] leading-[1.08] font-semibold tracking-[-0.035em] text-zinc-950 dark:text-zinc-100">
-          ¿Qué necesitás resolver?
-        </h2>
-      </section>
-
-      <section className="mt-6 space-y-5">
-        <SearchBox
-          ref={textareaRef}
-          value={prompt}
-          onChange={setPrompt}
-          onSubmit={handleSearch}
-          isLoading={isLoading}
-        />
-        <div className="space-y-2.5">
-          <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
-            ¿Para cuándo?
-          </p>
-          <UrgencySelector value={urgency} onChange={setUrgency} />
-        </div>
-      </section>
-
-      {error ? (
-        <div className="mt-4 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-          {error}
-        </div>
-      ) : null}
-
-      {isLoading ? (
-        <section className="mt-6">
-          <SearchResultsSkeleton />
-        </section>
-      ) : (
-        <section className="mt-8">
-          <div className="mb-4">
-            <p className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400 uppercase">
-              O elegí por dónde empezar
-            </p>
+    <div className="min-h-screen bg-[#fafafa] dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 flex flex-col">
+      {/* VIEWPORT 1: HOME MINIMALISTA PROMPT CENTERED */}
+      <div className="min-h-screen flex flex-col justify-between px-4 py-6 max-w-md mx-auto w-full">
+        {/* Top Bar: Logo Lizto (z en Indigo) + Campana */}
+        <header className="flex items-center justify-between w-full pt-1 pb-2">
+          <div className="flex items-center">
+            <span className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
+              Li<span className="text-[#4F46E5]">z</span>to
+            </span>
           </div>
-          <CategoryGrid categories={categories} onSelectCategory={handleSelectCategory} />
-        </section>
-      )}
+          <button
+            type="button"
+            aria-label="Notificaciones"
+            className="flex size-10 items-center justify-center rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 shadow-sm"
+          >
+            <Bell className="size-4" />
+          </button>
+        </header>
 
-      <p className="mt-auto pt-8 text-center text-xs leading-5 text-zinc-400 dark:text-zinc-500">
-        Profesionales verificados · Buscar no tiene costo
-      </p>
-    </ScreenShell>
+        {/* CENTRO DE PANTALLA: PROMPT BÚSQUEDA */}
+        <main className="my-auto py-8 flex flex-col items-center text-center w-full space-y-6">
+          <div className="space-y-1">
+            <p className="text-[13px] font-medium text-zinc-400 dark:text-zinc-500">
+              Hola, {firstName}
+            </p>
+            <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+              ¿Qué necesitás resolver?
+            </h1>
+          </div>
+
+          {/* Search box with rounded-[20px] */}
+          <div className="w-full">
+            <SearchBox
+              ref={textareaRef}
+              value={prompt}
+              onChange={setPrompt}
+              onSubmit={handleSearch}
+              isLoading={isLoading}
+            />
+          </div>
+
+          {/* 3 chips de urgencia centrados debajo del textarea */}
+          <UrgencyChips value={urgency} onChange={setUrgency} className="pt-2" />
+
+          {error && (
+            <div className="w-full rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+              {error}
+            </div>
+          )}
+        </main>
+
+        {/* Texto sutil abajo del centro */}
+        <div className="pb-6 text-center">
+          <button
+            type="button"
+            onClick={() => {
+              window.scrollTo({ top: window.innerHeight * 0.8, behavior: "smooth" });
+            }}
+            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition"
+          >
+            <span>o elegí una categoría</span>
+            <ChevronDown className="size-3.5 animate-bounce" />
+          </button>
+        </div>
+      </div>
+
+      {/* VIEWPORT 2: CATEGORÍAS (Al deslizar hacia abajo, fuera del viewport inicial) */}
+      <section className="min-h-screen bg-zinc-100/60 dark:bg-zinc-950/40 border-t border-zinc-200/80 dark:border-zinc-800 px-4 py-12">
+        <div className="max-w-md mx-auto w-full space-y-6">
+          <div className="text-center space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              Categorías de servicio
+            </p>
+            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+              Explorá profesionales por rubro
+            </h2>
+          </div>
+
+          {isLoading ? (
+            <SearchResultsSkeleton />
+          ) : (
+            <CategoryGrid categories={categories} onSelectCategory={handleSelectCategory} />
+          )}
+
+          <p className="pt-8 text-center text-xs text-zinc-400 dark:text-zinc-500">
+            Profesionales verificados · Buscar no tiene costo
+          </p>
+        </div>
+      </section>
+    </div>
   );
 }
