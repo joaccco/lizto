@@ -33,14 +33,27 @@ const categoryIcons: Record<string, LucideIcon> = {
 
 interface CategoryGridProps {
   categories?: Category[];
+  onSelectCategory?: (categoryName: string) => void;
   className?: string;
 }
 
-export function CategoryGrid({ categories: propCategories, className }: CategoryGridProps) {
+export function CategoryGrid({
+  categories: propCategories,
+  onSelectCategory,
+  className,
+}: CategoryGridProps) {
   const router = useRouter();
   const { categories: fetchedCategories } = useCategories();
 
   const categories = propCategories || fetchedCategories;
+
+  const handleClick = (category: Category) => {
+    if (onSelectCategory) {
+      onSelectCategory(category.name);
+    } else {
+      router.push(`/search?category=${category.slug}`);
+    }
+  };
 
   return (
     <div className={cn("grid grid-cols-2 gap-2.5", className)}>
@@ -51,8 +64,8 @@ export function CategoryGrid({ categories: propCategories, className }: Category
           <button
             key={category.id || category.slug}
             type="button"
-            onClick={() => router.push(`/search?category=${category.slug}`)}
-            className="group flex items-center gap-3 rounded-2xl border border-[#E4E4E0] dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3 text-left transition-colors hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20"
+            onClick={() => handleClick(category)}
+            className="group flex min-h-[56px] items-center gap-3 rounded-2xl border border-[#E4E4E0] dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3 text-left transition-colors hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20"
           >
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#F1F0FF] dark:bg-indigo-950/50 text-[#4F46E5] dark:text-indigo-400 transition-colors group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50">
               <Icon className="size-[18px]" />

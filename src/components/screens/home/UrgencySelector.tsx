@@ -15,7 +15,7 @@ interface UrgencyOption {
 const URGENCY_OPTIONS: UrgencyOption[] = [
   {
     value: "immediate",
-    label: "Ahora",
+    label: "Ahora mismo",
     icon: Zap,
     hint: "Lo antes posible",
   },
@@ -27,7 +27,7 @@ const URGENCY_OPTIONS: UrgencyOption[] = [
   },
   {
     value: "scheduled",
-    label: "Programar",
+    label: "Lo planifico",
     icon: Calendar,
     hint: "Elegir fecha",
   },
@@ -56,17 +56,17 @@ export function UrgencySelector({
             type="button"
             onClick={() => onChange(option.value)}
             className={cn(
-              "flex min-h-16 flex-col items-start justify-center gap-1 rounded-2xl border px-3 py-2.5 text-left transition-colors",
+              "flex min-h-[56px] flex-col items-start justify-center gap-0.5 rounded-2xl border px-3 py-2 text-left transition-colors",
               isActive
                 ? "border-zinc-950 bg-zinc-950 text-white"
-                : "border-[#E4E4E0] bg-white text-zinc-600 hover:border-zinc-300"
+                : "border-[#E4E4E0] bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
             )}
           >
             <span className="flex items-center gap-1.5 text-xs font-semibold">
               <Icon className={cn("size-3.5", option.value === "immediate" && !isActive ? "text-red-500" : "")} />
               {option.label}
             </span>
-            <span className={cn("text-[10px]", isActive ? "text-zinc-300" : "text-zinc-400")}>
+            <span className={cn("text-[10px]", isActive ? "text-zinc-300" : "text-zinc-400 dark:text-zinc-400")}>
               {option.hint}
             </span>
           </button>

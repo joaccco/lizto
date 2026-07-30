@@ -2,7 +2,7 @@
 
 import { CheckCircle2, Star, User, ArrowRight, Home } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ScreenShell } from "@/components/screens/shared/ScreenShell";
@@ -10,6 +10,7 @@ import { formatPriceRange, MOCK_PROVIDERS } from "@/lib/mock-data";
 import type { Provider } from "@/lib/types";
 
 export default function WorkConfirmedPage() {
+  const router = useRouter();
   const [provider, setProvider] = useState<Provider | null>(null);
   const [imageError, setImageError] = useState(false);
 
@@ -93,20 +94,20 @@ export default function WorkConfirmedPage() {
 
       {/* Action Buttons */}
       <div className="space-y-3 pt-6 w-full">
-        <Link
-          href="/my-requests"
+        <button
+          onClick={() => { router.refresh(); router.push("/my-requests"); }}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
         >
           <span>Ver estado</span>
           <ArrowRight className="size-4" />
-        </Link>
-        <Link
-          href="/"
+        </button>
+        <button
+          onClick={() => { router.refresh(); router.push("/"); }}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 py-3.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-700"
         >
           <Home className="size-4" />
           <span>Volver al inicio</span>
-        </Link>
+        </button>
       </div>
     </ScreenShell>
   );

@@ -155,7 +155,10 @@ export default function MyRequestsPage() {
 
   const fetchRequests = () => {
     setIsLoading(true);
-    apiFetch<{ data: RequestItem[] }>(ENDPOINTS.REQUESTS)
+    // BUG 1: no-store ensures we always get fresh data on every mount
+    apiFetch<{ data: RequestItem[] }>(ENDPOINTS.REQUESTS, {
+      headers: { "Cache-Control": "no-store" },
+    })
       .then((res) => setRequests(res.data || []))
       .catch(() => setError("No se pudieron cargar tus solicitudes."))
       .finally(() => setIsLoading(false));
@@ -254,6 +257,8 @@ export default function MyRequestsPage() {
                 {items.map((item) => {
                   const catSlug = item.category?.slug || "general";
                   const Icon = categoryIcons[catSlug] || Grid2x2;
+                  // BUG 2: use 'Servicio general' when category is null
+                  const categoryName = item.category?.name ?? "Servicio general";
                   const badge = STATUS_BADGES[item.status] || {
                     label: item.status,
                     className:
@@ -276,7 +281,7 @@ export default function MyRequestsPage() {
                           </div>
                           <div className="min-w-0">
                             <h4 className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                              {item.category?.name || "Servicio"}
+                              {categoryName}
                             </h4>
                             <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
                               {item.raw_prompt}

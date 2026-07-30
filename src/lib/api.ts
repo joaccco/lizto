@@ -6,32 +6,32 @@ export async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
+  // Leer token en cada llamada
   const token = authStorage.getToken();
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  const { headers: optionHeaders, ...restOptions } = options || {};
 
   try {
     const res = await fetch(`${API_URL}${endpoint}`, {
       signal: controller.signal,
+      ...restOptions,
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...options?.headers,
+        ...optionHeaders,
       },
-      ...options,
     });
+
     clearTimeout(timeoutId);
 
-    if (res.status === 401) {
-      authStorage.clear();
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
-      throw new Error("No autenticado");
-    }
-
     if (!res.ok) {
+      if (res.status === 401) {
+        authStorage.clear();
+      }
       const error = await res.json().catch(() => ({}));
       throw error;
     }

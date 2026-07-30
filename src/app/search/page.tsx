@@ -1,11 +1,5 @@
-import { Suspense } from "react";
+import { HomeScreen } from "@/components/screens/HomeScreen";
 
-import SearchPage from "./SearchPageClient";
-
-export default function SearchRoutePage() {
-  return (
-    <Suspense fallback={null}>
-      <SearchPage />
-    </Suspense>
-  );
+export default function SearchPage() {
+  return <HomeScreen />;
 }

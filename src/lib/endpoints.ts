@@ -3,7 +3,7 @@ export const ENDPOINTS = {
   LOGIN: "/auth/login",
   REGISTER: "/auth/register",
   LOGOUT: "/auth/logout",
-  ME: "/users/me",
+  ME: "/auth/me",
 
   // Service Requests
   REQUESTS: "/requests",
