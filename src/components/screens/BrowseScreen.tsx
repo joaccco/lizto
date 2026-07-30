@@ -1,5 +1,6 @@
 "use client";
 
+import { SearchX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -12,6 +13,7 @@ import {
   buildParsedTags,
 } from "@/components/screens/browse/ParsedTags";
 import { SwipeActions } from "@/components/screens/browse/SwipeActions";
+import { RecommendScreen } from "@/components/screens/RecommendScreen";
 import { ScreenShell } from "@/components/screens/shared/ScreenShell";
 import { TopBar } from "@/components/screens/shared/TopBar";
 import { useCardStack } from "@/hooks/useCardStack";
@@ -38,8 +40,9 @@ export function BrowseScreen() {
   const [categorySlug, setCategorySlug] = useState<string | undefined>(undefined);
   const [parsedRequest, setParsedRequest] = useState<ParsedRequest>(defaultParsedRequest);
   const [matchSessionId, setMatchSessionId] = useState<string | null>(null);
-  // FIX 3: Store full card objects with card_id, not just providers
   const [sessionCards, setSessionCards] = useState<StoredCard[] | null>(null);
+  const [showAllOptions, setShowAllOptions] = useState(false);
+  const [savedNotice, setSavedNotice] = useState(false);
 
   useEffect(() => {
     try {
@@ -69,12 +72,9 @@ export function BrowseScreen() {
       if (storedMatchCards) {
         const rawStored = JSON.parse(storedMatchCards);
         if (rawStored && rawStored.length > 0) {
-          // FIX 3: Support both old format (plain providers) and new format (objects with card_id)
           if (rawStored[0]?.card_id !== undefined) {
-            // New format: array of { card_id, provider, ... }
             setSessionCards(rawStored as StoredCard[]);
           } else {
-            // Old fallback: plain provider objects (no card_id available)
             setSessionCards(null);
           }
         }
@@ -86,10 +86,8 @@ export function BrowseScreen() {
 
   const { providers: apiProviders, isLoading } = useProviders({ category: categorySlug });
 
-  // Build the providers list. When we have session cards, use their provider data.
   const providers = useMemo(() => {
     if (sessionCards && sessionCards.length > 0) {
-      // Attach card_id directly on provider object so handleAccept/handleReject can read it
       return sessionCards.map((sc) => ({
         ...sc.provider,
         card_id: sc.card_id,
@@ -123,12 +121,6 @@ export function BrowseScreen() {
 
     const targetCardId = (current as any)?.card_id || (current as any)?.match_card_id;
 
-    // FIX 2: Debug logs
-    console.log("=== ACCEPT ===");
-    console.log("session uuid:", matchSessionId);
-    console.log("card completa:", current);
-    console.log("cardId a mandar:", targetCardId);
-
     if (matchSessionId && targetCardId) {
       await acceptCard(targetCardId);
     }
@@ -142,12 +134,6 @@ export function BrowseScreen() {
     if (!current) return;
 
     const targetCardId = (current as any)?.card_id || (current as any)?.match_card_id;
-
-    // FIX 2: Debug logs
-    console.log("=== REJECT ===");
-    console.log("session uuid:", matchSessionId);
-    console.log("card completa:", current);
-    console.log("cardId a mandar:", targetCardId);
 
     if (matchSessionId && targetCardId) {
       await rejectCard(targetCardId);
@@ -165,6 +151,19 @@ export function BrowseScreen() {
 
     advanceUndo();
   };
+
+  // CAMBIO 3: If urgency is immediate, show RecommendScreen first
+  const isImmediate = parsedRequest?.urgency === "immediate";
+  if (isImmediate && !showAllOptions) {
+    return (
+      <RecommendScreen
+        provider={providers[0] || null}
+        onAccept={handleAccept}
+        onShowAllOptions={() => setShowAllOptions(true)}
+        isLoading={isLoading}
+      />
+    );
+  }
 
   return (
     <ScreenShell>
@@ -193,17 +192,34 @@ export function BrowseScreen() {
             </div>
           </div>
         ) : providers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center px-6 mt-8">
-            <div className="text-5xl mb-4">🔍</div>
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-              No encontramos profesionales
+          /* CAMBIO 4: ESTADO VACÍO REDISEÑADO */
+          <div className="flex flex-col items-center justify-center py-12 text-center px-4 space-y-4">
+            <SearchX className="size-12 text-zinc-400" />
+            <h3 className="text-[20px] font-semibold text-zinc-950 dark:text-zinc-100">
+              Todavía no tenemos este servicio en tu zona
             </h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-              No hay profesionales disponibles para esta categoría en tu zona por el momento.
+            <p className="text-[16px] leading-6 text-zinc-500 dark:text-zinc-400 max-w-sm">
+              Guardamos tu solicitud y te avisamos cuando tengamos profesionales disponibles cerca tuyo.
             </p>
+
+            {savedNotice ? (
+              <div className="w-full rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-4 text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                Listo. Te avisamos cuando tengamos alguien disponible.
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSavedNotice(true)}
+                className="flex h-[56px] w-full items-center justify-center rounded-2xl bg-[#4F46E5] text-base font-semibold text-white transition hover:bg-indigo-700 shadow-sm"
+              >
+                Guardar y recibir aviso
+              </button>
+            )}
+
             <button
-              onClick={() => router.push("/")}
-              className="bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-indigo-700 transition"
+              type="button"
+              onClick={() => router.push("/search")}
+              className="flex h-[52px] w-full items-center justify-center rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-700"
             >
               Buscar otro servicio
             </button>

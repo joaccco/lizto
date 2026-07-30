@@ -33,6 +33,24 @@ export default function ProfilePage() {
     router.push("/login");
   };
 
+  if (!mounted) {
+    return (
+      <main className="min-h-screen bg-slate-50 dark:bg-zinc-900 py-8 px-4 sm:px-6">
+        <div className="mx-auto max-w-md space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              Mi perfil
+            </h1>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              Gestioná tu cuenta y tus preferencias de aplicación
+            </p>
+          </div>
+          <div className="h-28 w-full rounded-2xl bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-zinc-900 py-8 px-4 sm:px-6">
       <div className="mx-auto max-w-md space-y-6">
@@ -96,6 +114,27 @@ export default function ProfilePage() {
                 Crear cuenta
               </Link>
             </div>
+          </div>
+        )}
+
+        {/* Provider Mode Card if user has provider role */}
+        {isAuthenticated && user && (user.roles?.includes("provider") || user.has_provider_profile) && (
+          <div className="rounded-2xl border-2 border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 p-4 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#4F46E5] dark:text-indigo-400">
+                Modo profesional
+              </span>
+              <ShieldCheck className="size-4 text-[#4F46E5] dark:text-indigo-400" />
+            </div>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400">
+              Gestioná tu disponibilidad, trabajos recibidos y configurá tu perfil profesional.
+            </p>
+            <Link
+              href="/provider"
+              className="flex h-[44px] w-full items-center justify-center rounded-xl bg-[#4F46E5] text-xs font-semibold text-white hover:bg-indigo-700 transition shadow-sm"
+            >
+              Ir a mi panel de trabajo
+            </Link>
           </div>
         )}
 

@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Camera, Check, ChevronRight, Loader2, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ScreenShell } from "@/components/screens/shared/ScreenShell";
 import { TopBar } from "@/components/screens/shared/TopBar";
@@ -16,6 +16,7 @@ import type { ParsedRequest } from "@/lib/types";
 export default function SurveyPage() {
   const router = useRouter();
   const { createRequest, submitSurvey, createMatchSession } = useServiceRequest();
+  const hasInitialized = useRef(false);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
@@ -28,6 +29,9 @@ export default function SurveyPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     let isMounted = true;
 
     async function initSurvey() {

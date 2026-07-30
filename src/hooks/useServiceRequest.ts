@@ -99,6 +99,12 @@ export function useServiceRequest() {
   const [error, setError] = useState<string | null>(null);
 
   const createRequest = useCallback(async (parsedIntent: ParsedRequest) => {
+    const existingId = sessionStorage.getItem("service_request_id");
+    if (existingId) {
+      setRequestId(existingId);
+      return { id: existingId, status: "pending_survey", suggested_questions: [] };
+    }
+
     setIsLoading(true);
     setError(null);
 
