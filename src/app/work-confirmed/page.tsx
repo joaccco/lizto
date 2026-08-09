@@ -95,11 +95,18 @@ export default function WorkConfirmedPage() {
       {/* Action Buttons */}
       <div className="space-y-3 pt-6 w-full">
         <button
-          onClick={() => { router.refresh(); router.push("/my-requests"); }}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+          onClick={() => {
+            const reqId = sessionStorage.getItem("service_request_id");
+            if (reqId) {
+              router.push(`/requests/${reqId}`);
+            } else {
+              router.push("/my-requests");
+            }
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#4F46E5] h-[56px] text-base font-semibold text-white shadow-md transition hover:bg-indigo-700"
         >
-          <span>Ver estado</span>
-          <ArrowRight className="size-4" />
+          <span>¿Cómo va mi solicitud?</span>
+          <ArrowRight className="size-5" />
         </button>
         <button
           onClick={() => { router.refresh(); router.push("/"); }}

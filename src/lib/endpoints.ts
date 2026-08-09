@@ -10,6 +10,7 @@ export const ENDPOINTS = {
   REQUEST_PARSE: "/requests/parse",
   REQUEST_SURVEY: (id: string) => `/requests/${id}/survey`,
   REQUEST_MATCH: (id: string) => `/requests/${id}/match`,
+  REQUEST_CANCEL: (id: string) => `/requests/${id}/cancel`,
   REQUESTS_CLEANUP: "/requests/cleanup",
 
   // Matching
@@ -27,12 +28,16 @@ export const ENDPOINTS = {
   // Providers
   PROVIDERS: "/providers",
   PROVIDER_DETAIL: (id: string) => `/providers/${id}`,
+  // Provider Profile & Dashboard
+  PROVIDER_PROFILE: "/provider/profile",
   PROVIDER_AVAILABILITY: "/provider/availability",
 
   // Works
   WORKS: "/works",
   WORK_DETAIL: (id: string) => `/works/${id}`,
   WORK_COMPLETE: (id: string) => `/works/${id}/complete`,
+  WORK_CANCEL: (id: string) => `/works/${id}/cancel`,
+  WORK_RATE: (id: string) => `/works/${id}/rate`,
   WORK_REQUESTS: "/provider/work-requests",
   WORK_CONFIRM: (id: string) => `/provider/work-requests/${id}/confirm`,
   WORK_DECLINE: (id: string) => `/provider/work-requests/${id}/decline`,

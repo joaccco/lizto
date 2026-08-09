@@ -19,7 +19,7 @@ export default function RegisterPage() {
     e.preventDefault();
     try {
       await register(name, email, password, role);
-      router.push("/");
+      router.push("/onboarding");
     } catch {
       // Error is handled in hook state
     }

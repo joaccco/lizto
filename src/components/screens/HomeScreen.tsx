@@ -41,10 +41,13 @@ export function HomeScreen() {
 
       const parsed = result.parsed_request;
       const suggestedQuestions = result.rawBackendData?.suggested_questions || [];
-      const hasClarification = parsed.clarification_needed && parsed.clarification_needed.length > 0;
-      const isLowConfidence = parsed.confidence !== undefined && parsed.confidence <= 0.85;
+      const hasClarification = parsed?.clarification_needed && parsed.clarification_needed.length > 0;
+      const isLowConfidence = parsed?.confidence !== undefined && parsed.confidence <= 0.85;
+      const slug = parsed?.categorySlug || parsed?.category?.toLowerCase() || "";
+      const REMOTE_CATEGORIES = ["abogacia", "contaduria", "diseno"];
+      const requiresMap = !REMOTE_CATEGORIES.includes(slug);
 
-      if (suggestedQuestions.length > 0 || hasClarification || isLowConfidence) {
+      if (suggestedQuestions.length > 0 || hasClarification || isLowConfidence || requiresMap) {
         router.push("/survey");
       } else if (result.mode === "fast") {
         router.push("/fast-mode");

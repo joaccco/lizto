@@ -109,6 +109,10 @@ export function useServiceRequest() {
     setError(null);
 
     try {
+      const storedAddress = typeof window !== "undefined" ? sessionStorage.getItem("location_address") : null;
+      const storedLat = typeof window !== "undefined" ? sessionStorage.getItem("location_lat") : null;
+      const storedLng = typeof window !== "undefined" ? sessionStorage.getItem("location_lng") : null;
+
       const response = await apiFetch<CreateRequestResponse>(ENDPOINTS.REQUESTS, {
         method: "POST",
         body: JSON.stringify({
@@ -117,9 +121,9 @@ export function useServiceRequest() {
           category_slug: parsedIntent.categorySlug,
           is_remote: parsedIntent.is_remote ?? false,
           location: {
-            lat: -27.4692,
-            lng: -58.8306,
-            address: "Corrientes, Argentina",
+            lat: storedLat ? parseFloat(storedLat) : -27.4692,
+            lng: storedLng ? parseFloat(storedLng) : -58.8306,
+            address: storedAddress || "Córdoba 456, Corrientes",
           },
           parsed_intent: {
             raw_intent: parsedIntent.raw_intent,

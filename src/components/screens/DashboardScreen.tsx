@@ -121,15 +121,21 @@ export function DashboardScreen({
     }
   };
 
-  const handleCancelRequest = async () => {
-    if (confirm("¿Estás seguro de que querés cancelar esta solicitud?")) {
-      try {
-        await apiFetch(`/requests/${activeRequest.uuid}/cancel`, { method: "POST" });
-      } catch {
-        // silent
-      }
-      if (onRefresh) onRefresh();
-      else router.refresh();
+  const [showCancelModal, setShowCancelModal] = useState(false);
+
+  const handleConfirmCancel = async () => {
+    setIsSubmitting(true);
+    try {
+      await apiFetch(ENDPOINTS.REQUEST_CANCEL(activeRequest.uuid), { method: "POST" });
+    } catch {
+      // ignore
+    } finally {
+      setIsSubmitting(false);
+      setShowCancelModal(false);
+      sessionStorage.removeItem("service_request_id");
+      sessionStorage.removeItem("match_session_id");
+      sessionStorage.removeItem("parsed_request");
+      router.push("/");
     }
   };
 
@@ -244,10 +250,10 @@ export function DashboardScreen({
           ) : (
             <button
               type="button"
-              onClick={handleCancelRequest}
+              onClick={() => setShowCancelModal(true)}
               className="flex h-[56px] w-full items-center justify-center rounded-2xl border-2 border-red-200 dark:border-red-900 bg-white dark:bg-zinc-800 px-4 text-base font-semibold text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-950/40"
             >
-              Cancelar si cambié de idea
+              Cancelar solicitud
             </button>
           )}
         </div>
@@ -261,6 +267,37 @@ export function DashboardScreen({
       >
         + Necesito resolver otra cosa
       </button>
+
+      {/* MODAL CANCELAR SOLICITUD */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-zinc-800 p-6 shadow-2xl space-y-4 text-center">
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+              ¿Seguro que querés cancelar?
+            </h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              La solicitud se cancelará y no se asignará ningún profesional.
+            </p>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 h-[48px] rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+              >
+                No, mantener
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancel}
+                disabled={isSubmitting}
+                className="flex-1 h-[48px] rounded-xl bg-red-600 text-xs font-semibold text-white hover:bg-red-700 transition"
+              >
+                Sí, cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ScreenShell>
   );
 }

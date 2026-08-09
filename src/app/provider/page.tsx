@@ -126,6 +126,30 @@ export default function ProviderDashboardPage() {
   const [estimatedDuration, setEstimatedDuration] = useState<number>(30);
   const [isConfirming, setIsConfirming] = useState(false);
 
+  // Provider Cancel Modal State
+  const [showProviderCancelModal, setShowProviderCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("Emergencia personal");
+  const [isCancellingWork, setIsCancellingWork] = useState(false);
+
+  const handleConfirmProviderCancel = async () => {
+    if (!activeWork) return;
+    setIsCancellingWork(true);
+    try {
+      await apiFetch(ENDPOINTS.WORK_CANCEL(activeWork.id), {
+        method: "POST",
+        body: JSON.stringify({ reason: cancelReason }),
+      });
+      setAvailability("available");
+      setShowProviderCancelModal(false);
+      fetchData();
+    } catch {
+      setShowProviderCancelModal(false);
+      fetchData();
+    } finally {
+      setIsCancellingWork(false);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading) {
       if (!isAuthenticated) {
@@ -353,13 +377,22 @@ export default function ProviderDashboardPage() {
                     <h4 className="text-base font-bold text-white">Cliente: {activeWork.client_name}</h4>
                     <p className="text-xs text-emerald-200 mt-1">{activeWork.raw_prompt}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleCompleteActiveWork(activeWork.id)}
-                    className="flex h-[56px] w-full items-center justify-center rounded-2xl bg-emerald-600 text-sm font-bold text-white hover:bg-emerald-500 transition shadow-sm"
-                  >
-                    Marcar como terminado
-                  </button>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => handleCompleteActiveWork(activeWork.id)}
+                      className="flex h-[56px] w-full items-center justify-center rounded-2xl bg-emerald-600 text-sm font-bold text-white hover:bg-emerald-500 transition shadow-sm"
+                    >
+                      Marcar como terminado
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowProviderCancelModal(true)}
+                      className="flex h-[44px] w-full items-center justify-center rounded-xl border border-red-900/80 bg-transparent text-xs font-bold text-red-400 hover:bg-red-950/40 transition"
+                    >
+                      No puedo continuar
+                    </button>
+                  </div>
                 </div>
               </section>
             )}
@@ -406,9 +439,14 @@ export default function ProviderDashboardPage() {
                           "{req.raw_prompt}"
                         </p>
 
-                        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                          <MapPin className="size-3.5" />
-                          <span>{req.location || "Centro, CABA"}</span>
+                        <div className="space-y-1 text-xs text-zinc-400 border-t border-zinc-800/80 pt-2">
+                          <div className="flex items-center gap-1.5 font-medium text-zinc-300">
+                            <MapPin className="size-3.5 text-[#4F46E5]" />
+                            <span>{req.location || "Zona Centro, Corrientes"}</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400 pl-5">
+                            El cliente está a 2.3 km de tu ubicación
+                          </p>
                         </div>
 
                         {/* Botones */}
@@ -573,6 +611,52 @@ export default function ProviderDashboardPage() {
                   className="flex-1 h-[48px] rounded-xl bg-[#4F46E5] text-xs font-bold text-white hover:bg-indigo-600 transition"
                 >
                   Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL PROFESIONAL NO PUEDO CONTINUAR */}
+        {showProviderCancelModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+            <div className="w-full max-w-sm rounded-3xl bg-[#1a1a1a] border border-zinc-800 p-6 shadow-2xl space-y-4">
+              <h3 className="text-lg font-bold text-white">¿Por qué no podés continuar?</h3>
+              <p className="text-xs text-zinc-400">Seleccioná un motivo para cancelar el trabajo actual.</p>
+
+              <div className="space-y-2">
+                {["Emergencia personal", "No puedo llegar", "Otro"].map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setCancelReason(opt)}
+                    className={`flex h-[48px] w-full items-center justify-between px-4 rounded-xl border text-xs font-bold transition ${
+                      cancelReason === opt
+                        ? "border-red-600 bg-red-950/40 text-red-300"
+                        : "border-zinc-800 bg-[#0f0f0f] text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    <span>{opt}</span>
+                    {cancelReason === opt && <span className="size-2 rounded-full bg-red-500" />}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowProviderCancelModal(false)}
+                  className="flex-1 h-[48px] rounded-xl border border-zinc-800 bg-[#0f0f0f] text-xs font-bold text-zinc-400"
+                >
+                  Volver
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmProviderCancel}
+                  disabled={isCancellingWork}
+                  className="flex-1 h-[48px] rounded-xl bg-red-600 text-xs font-bold text-white hover:bg-red-700 transition"
+                >
+                  Confirmar cancelación
                 </button>
               </div>
             </div>
