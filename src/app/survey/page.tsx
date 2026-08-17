@@ -1,35 +1,27 @@
 "use client";
 
-import { ArrowLeft, Camera, Check, ChevronRight, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Camera, Check, ChevronRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ScreenShell } from "@/components/screens/shared/ScreenShell";
-import { TopBar } from "@/components/screens/shared/TopBar";
 import { MapPicker } from "@/components/ui/MapPicker";
 import {
   useServiceRequest,
   type AnswerItem,
   type Question,
 } from "@/hooks/useServiceRequest";
+import { useAuth } from "@/context/AuthContext";
 import type { ParsedRequest } from "@/lib/types";
 
 const initializedPrompts = new Set<string>();
-
-const PHYSICAL_CATEGORIES = [
-  "cerrajeria",
-  "electricidad",
-  "plomeria",
-  "limpieza",
-  "cerrajeria-hogar",
-  "cerrajeria-automotor",
-  "cerrajeria-comercial",
-];
 
 const REMOTE_CATEGORIES = ["abogacia", "contaduria", "diseno"];
 
 export default function SurveyPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const firstName = user?.name ? user.name.split(" ")[0] : "Juan";
   const { createRequest, submitSurvey, createMatchSession } = useServiceRequest();
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -42,7 +34,7 @@ export default function SurveyPage() {
   const [showMapStep, setShowMapStep] = useState(false);
   const [locationLat, setLocationLat] = useState<number>(-27.4692);
   const [locationLng, setLocationLng] = useState<number>(-58.8306);
-  const [locationAddress, setLocationAddress] = useState<string>("Córdoba 456, Corrientes");
+  const [locationAddress, setLocationAddress] = useState<string>("Thames 1842, Palermo");
 
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,13 +64,11 @@ export default function SurveyPage() {
           initializedPrompts.add(promptKey);
         }
 
-        // Step 1: Read suggested_questions immediately from sessionStorage for instant rendering
         let cachedQuestions: Question[] =
           parsedData?.rawBackendData?.suggested_questions ||
           parsedData?.data?.suggested_questions ||
           [];
 
-        // If category is fotografia, ensure question "¿El trabajo es en tu domicilio?" exists
         if (slug === "fotografia") {
           const hasPhotoDomQuestion = cachedQuestions.some(
             (q) => q.key === "is_photo_at_home" || q.text.includes("domicilio")
@@ -105,7 +95,6 @@ export default function SurveyPage() {
           setIsLoadingQuestions(false);
         }
 
-        // Step 2: Create service request in background
         const res = await createRequest(parsedIntent).catch((err) => {
           console.error("Error creando request:", err);
           return null;
@@ -160,7 +149,6 @@ export default function SurveyPage() {
         question_id: q.id,
       }));
 
-      // Store location in sessionStorage
       if (typeof window !== "undefined") {
         sessionStorage.setItem("location_lat", String(locationLat));
         sessionStorage.setItem("location_lng", String(locationLng));
@@ -181,7 +169,6 @@ export default function SurveyPage() {
 
   const handleNextStep = async (selectedAnswer?: any) => {
     if (showMapStep) {
-      // Map step finish
       await handleFinishSurvey(answers);
       return;
     }
@@ -201,7 +188,6 @@ export default function SurveyPage() {
     if (currentStep < questions.length - 1) {
       setCurrentStep((prev) => prev + 1);
     } else {
-      // All survey questions answered -> determine if map step is needed
       const isRemote = REMOTE_CATEGORIES.includes(categorySlug);
       let requiresLocationMap = false;
 
@@ -231,12 +217,12 @@ export default function SurveyPage() {
 
   if (isLoadingQuestions || isSubmitting) {
     return (
-      <ScreenShell className="flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-[#4F46E5]">
-            <Loader2 className="size-6 animate-spin" />
+      <ScreenShell className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-[#7C5CFF]/14 border border-[#7C5CFF]/30 text-[#8B6BFF]">
+            <Loader2 className="size-7 animate-spin" />
           </div>
-          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          <p className="text-base font-bold text-[#F4F3F7]">
             {isSubmitting
               ? "Buscando profesionales indicados..."
               : "Cargando preguntas de la solicitud..."}
@@ -246,20 +232,36 @@ export default function SurveyPage() {
     );
   }
 
-  return (
-    <ScreenShell className="flex flex-col justify-between py-6">
-      <div>
-        {/* Header */}
-        <TopBar
-          variant="back"
-          title={showMapStep ? "Ubicación del servicio" : "Contanos más"}
-          backHref="/"
-          rightIcon="none"
-        />
+  const progressPct = Math.round(((currentStep + 1) / (questions.length || 1)) * 100);
 
-        {/* MAP STEP */}
+  return (
+    <ScreenShell className="flex flex-col justify-between min-h-screen py-6 relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute top-28 left-1/2 -translate-x-1/2 size-[340px] rounded-full bg-[radial-gradient(circle,rgba(124,92,255,0.22)_0%,transparent_68%)] blur-xl pointer-events-none" />
+
+      <div className="relative z-10 space-y-6">
+        {/* Header Navigation & Progress Bar (View 02 / View 03) */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="text-zinc-400 hover:text-white transition"
+          >
+            <ArrowLeft className="size-5" />
+          </button>
+          {!showMapStep && questions.length > 0 && (
+            <div className="flex-1 h-0.5 rounded-full bg-white/9 overflow-hidden">
+              <div
+                className="h-full bg-[#7C5CFF] transition-all duration-400 ease-out"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* MAP STEP (View 03) */}
         {showMapStep ? (
-          <div className="mt-4 space-y-6">
+          <div className="space-y-6 pt-2">
             <MapPicker
               initialLat={locationLat}
               initialLng={locationLng}
@@ -273,7 +275,7 @@ export default function SurveyPage() {
             <button
               type="button"
               onClick={() => handleNextStep()}
-              className="flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-[#4F46E5] text-base font-semibold text-white transition hover:bg-indigo-700 shadow-md"
+              className="flex h-[56px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-base font-bold text-white transition shadow-[0_14px_38px_rgba(124,92,255,0.45)] cursor-pointer"
             >
               <span>Finalizar y buscar profesionales</span>
               <ChevronRight className="size-5" />
@@ -281,52 +283,35 @@ export default function SurveyPage() {
           </div>
         ) : currentQuestion ? (
           <>
-            {/* Subtitle */}
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Unas preguntas rápidas para encontrar el profesional ideal
-            </p>
+            {/* System Label */}
+            <div className="flex items-center gap-2 pt-2">
+              <span className="size-1.5 rounded-full bg-[#8B6BFF] animate-pulse" />
+              <span className="text-[10.5px] font-mono tracking-wider uppercase text-[#A78BFA] font-medium">
+                Lizto está afinando el pedido
+              </span>
+            </div>
 
-            {/* Progress bar */}
-            <div className="mt-4 space-y-1.5">
-              <div className="flex justify-between text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-                <span>Pregunta {currentStep + 1} de {questions.length}</span>
-                <span>{Math.round(((currentStep + 1) / questions.length) * 100)}%</span>
-              </div>
-              <div className="h-1.5 w-full rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
-                <div
-                  className="h-full bg-[#4F46E5] transition-all duration-300 ease-out"
-                  style={{ width: `${Math.round(((currentStep + 1) / questions.length) * 100)}%` }}
-                />
-              </div>
+            {/* Title & Question */}
+            <div className="space-y-2">
+              <h1 className="text-[32px] leading-tight font-extrabold tracking-tight text-[#F4F3F7]">
+                Una cosa más, {firstName}.
+              </h1>
+              <p className="text-[19px] leading-snug font-medium text-[#F4F3F7]/62">
+                {currentQuestion.text}
+              </p>
             </div>
 
             {error && (
-              <div className="mt-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 p-3">
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <div className="rounded-2xl border border-red-900/80 bg-red-950/40 p-3 text-sm text-red-400">
+                {error}
               </div>
             )}
 
-            {/* Question Title */}
-            <div className="mt-8">
-              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                {currentQuestion.text}
-              </h2>
-              {currentQuestion.is_required ? (
-                <span className="mt-1 inline-block text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                  * Requerido
-                </span>
-              ) : (
-                <span className="mt-1 inline-block text-[11px] font-medium text-zinc-400">
-                  Opcional
-                </span>
-              )}
-            </div>
-
-            {/* Input Types */}
-            <div className="mt-6 space-y-3">
+            {/* Options (View 02 Design System) */}
+            <div className="space-y-3 pt-4">
               {/* single_select */}
               {currentQuestion.input_type === "single_select" && currentQuestion.options && (
-                <div className="grid grid-cols-1 gap-2.5">
+                <div className="space-y-3">
                   {currentQuestion.options.map((opt) => {
                     const isSelected = answers[currentQuestion.key] === opt.value;
                     return (
@@ -334,21 +319,21 @@ export default function SurveyPage() {
                         key={opt.value}
                         type="button"
                         onClick={() => handleNextStep(opt.value)}
-                        className={`flex items-center justify-between p-4 rounded-2xl border-2 text-left transition-all ${
+                        className={`h-[64px] w-full rounded-[16px] px-6 flex items-center justify-between text-left transition-all duration-180 cursor-pointer ${
                           isSelected
-                            ? "border-[#4F46E5] bg-indigo-50/60 dark:bg-indigo-950/40 text-[#4F46E5]"
-                            : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:border-indigo-200"
+                            ? "bg-[#7C5CFF]/14 border border-[#7C5CFF]/55 text-[#F4F3F7] shadow-[0_0_34px_rgba(124,92,255,0.28)] font-semibold"
+                            : "bg-white/[0.045] border border-white/10 text-[#F4F3F7]/78 hover:border-white/20 font-medium"
                         }`}
                       >
-                        <span className="text-sm font-semibold">{opt.label}</span>
+                        <span className="text-[17px]">{opt.label}</span>
                         <div
-                          className={`flex size-6 items-center justify-center rounded-full border ${
+                          className={`size-[22px] rounded-full flex items-center justify-center transition ${
                             isSelected
-                              ? "border-[#4F46E5] bg-[#4F46E5] text-white"
-                              : "border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-700"
+                              ? "bg-[#7C5CFF] text-white font-bold text-xs"
+                              : "opacity-0"
                           }`}
                         >
-                          {isSelected ? <Check className="size-3.5" /> : null}
+                          ✓
                         </div>
                       </button>
                     );
@@ -358,7 +343,7 @@ export default function SurveyPage() {
 
               {/* boolean */}
               {currentQuestion.input_type === "boolean" && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3">
                   {[
                     { value: "yes", label: "Sí" },
                     { value: "no", label: "No" },
@@ -369,13 +354,22 @@ export default function SurveyPage() {
                         key={opt.value}
                         type="button"
                         onClick={() => handleNextStep(opt.value)}
-                        className={`flex flex-col items-center justify-center p-6 rounded-2xl border-2 text-center transition-all ${
+                        className={`h-[64px] w-full rounded-[16px] px-6 flex items-center justify-between text-left transition-all duration-180 cursor-pointer ${
                           isSelected
-                            ? "border-[#4F46E5] bg-indigo-50/60 dark:bg-indigo-950/40 text-[#4F46E5]"
-                            : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:border-indigo-200"
+                            ? "bg-[#7C5CFF]/14 border border-[#7C5CFF]/55 text-[#F4F3F7] shadow-[0_0_34px_rgba(124,92,255,0.28)] font-semibold"
+                            : "bg-white/[0.045] border border-white/10 text-[#F4F3F7]/78 hover:border-white/20 font-medium"
                         }`}
                       >
-                        <span className="text-lg font-bold">{opt.label}</span>
+                        <span className="text-[17px]">{opt.label}</span>
+                        <div
+                          className={`size-[22px] rounded-full flex items-center justify-center transition ${
+                            isSelected
+                              ? "bg-[#7C5CFF] text-white font-bold text-xs"
+                              : "opacity-0"
+                          }`}
+                        >
+                          ✓
+                        </div>
                       </button>
                     );
                   })}
@@ -389,13 +383,13 @@ export default function SurveyPage() {
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   placeholder="Escribí los detalles acá..."
-                  className="w-full rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-4 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]"
+                  className="w-full rounded-[18px] border border-white/12 bg-white/5 p-4 text-base text-[#F4F3F7] placeholder-zinc-500 focus:outline-none focus:border-[#7C5CFF]"
                 />
               )}
 
               {/* photo */}
               {currentQuestion.input_type === "photo" && (
-                <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-8 text-center">
+                <div className="flex flex-col items-center justify-center rounded-[20px] border border-dashed border-white/15 bg-white/4 p-8 text-center">
                   {photoPreview ? (
                     <div className="relative size-32 overflow-hidden rounded-xl">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -403,10 +397,10 @@ export default function SurveyPage() {
                     </div>
                   ) : (
                     <label className="flex cursor-pointer flex-col items-center gap-2">
-                      <div className="flex size-12 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-[#4F46E5]">
+                      <div className="flex size-12 items-center justify-center rounded-full bg-[#7C5CFF]/14 text-[#8B6BFF]">
                         <Camera className="size-6" />
                       </div>
-                      <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                      <span className="text-xs font-semibold text-zinc-300">
                         Subir foto o tomar imagen
                       </span>
                       <input
@@ -425,18 +419,22 @@ export default function SurveyPage() {
                 </div>
               )}
             </div>
+
+            <p className="text-center text-xs text-zinc-500 font-medium pt-2">
+              Tocá una opción y seguimos solos.
+            </p>
           </>
         ) : null}
       </div>
 
       {/* Footer Controls */}
       {!showMapStep && currentQuestion && (
-        <div className="mt-8 flex items-center justify-between gap-3 pt-4">
+        <div className="relative z-10 pt-6 flex items-center justify-between gap-3">
           {!currentQuestion.is_required || currentQuestion.input_type === "photo" ? (
             <button
               type="button"
               onClick={handleSkip}
-              className="px-4 py-2.5 text-xs font-semibold text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+              className="text-xs font-semibold text-zinc-500 hover:text-zinc-300 transition"
             >
               Saltar
             </button>
@@ -449,12 +447,20 @@ export default function SurveyPage() {
             <button
               type="button"
               onClick={() => handleNextStep()}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#7C5CFF] px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-[#6b47ff] transition"
             >
               <span>Continuar</span>
               <ChevronRight className="size-4" />
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => setShowMapStep(true)}
+            className="text-xs font-semibold text-zinc-400 hover:text-white transition"
+          >
+            Prefiero escribirlo
+          </button>
         </div>
       )}
     </ScreenShell>

@@ -51,7 +51,7 @@ export function CategoryGrid({
     if (onSelectCategory) {
       onSelectCategory(category.name);
     } else {
-      router.push(`/search?category=${category.slug}`);
+      router.push(`/?category=${category.slug}`);
     }
   };
 
@@ -65,18 +65,13 @@ export function CategoryGrid({
             key={category.id || category.slug}
             type="button"
             onClick={() => handleClick(category)}
-            className="group flex min-h-[56px] items-center gap-3 rounded-2xl border border-[#E4E4E0] dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3 text-left transition-colors hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20"
+            className="group flex h-[92px] flex-col justify-between rounded-[20px] bg-[#131318] border border-white/8 p-4 text-left transition-all hover:border-[#8B6BFF]/40 hover:bg-[#191920] cursor-pointer"
           >
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#F1F0FF] dark:bg-indigo-950/50 text-[#4F46E5] dark:text-indigo-400 transition-colors group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50">
-              <Icon className="size-[18px]" />
+            <div className="flex size-7 items-center justify-center rounded-lg border border-[#7C5CFF]/55 bg-[#7C5CFF]/10 text-[#C4B5FD]">
+              <Icon className="size-4" />
             </div>
-            <span className="min-w-0">
-              <span className="block truncate text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                {category.name}
-              </span>
-              <span className="mt-0.5 block truncate text-[10px] text-zinc-400 dark:text-zinc-500">
-                Servicio profesional
-              </span>
+            <span className="text-base font-bold text-[#F4F3F7]">
+              {category.name}
             </span>
           </button>
         );

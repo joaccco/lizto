@@ -1,15 +1,16 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sun, Monitor, Moon, LogOut, User, ShieldCheck, ClipboardList, ChevronRight } from "lucide-react";
+import { LogOut, ShieldCheck, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ScreenShell } from "@/components/screens/shared/ScreenShell";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated, logout, isLoading } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -18,7 +19,7 @@ export default function ProfilePage() {
   }, []);
 
   const getInitials = (name: string) => {
-    if (!name) return "U";
+    if (!name) return "JP";
     return name
       .split(" ")
       .filter(Boolean)
@@ -33,217 +34,141 @@ export default function ProfilePage() {
     router.push("/login");
   };
 
-  if (!mounted) {
-    return (
-      <main className="min-h-screen bg-slate-50 dark:bg-zinc-900 py-8 px-4 sm:px-6">
-        <div className="mx-auto max-w-md space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              Mi perfil
-            </h1>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              Gestioná tu cuenta y tus preferencias de aplicación
-            </p>
-          </div>
-          <div className="h-28 w-full rounded-2xl bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-        </div>
-      </main>
-    );
-  }
+  const userName = user?.name || "Juan Pérez";
+  const userEmail = user?.email || "juan.perez@mail.com";
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-zinc-900 py-8 px-4 sm:px-6">
-      <div className="mx-auto max-w-md space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Mi perfil
+    <ScreenShell className="py-8 space-y-8">
+      {/* Header Profile Section */}
+      <div className="flex items-center gap-4">
+        <div className="size-[66px] rounded-full bg-[#1D1D25] border border-white/11 flex items-center justify-center font-bold text-lg text-zinc-300 shrink-0">
+          {getInitials(userName)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[22px] leading-tight font-extrabold tracking-tight text-[#F4F3F7] truncate">
+            {userName}
           </h1>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Gestioná tu cuenta y tus preferencias de aplicación
+          <p className="text-[13.5px] text-zinc-400 truncate mt-0.5">
+            {userEmail}
           </p>
         </div>
+      </div>
 
-        {/* User Card or Guest Card */}
-        {isAuthenticated && user ? (
-          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 shadow-sm">
-            <div className="flex items-center space-x-4">
-              <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-[#4F46E5] text-lg font-bold text-white shadow-sm">
-                {getInitials(user.name)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="truncate text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  {user.name}
-                </h2>
-                <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                  {user.email}
-                </p>
-                {user.roles && user.roles.length > 0 && (
-                  <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 text-[10px] font-semibold text-[#4F46E5] dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900">
-                    <ShieldCheck className="size-3" />
-                    {user.roles.join(", ")}
-                  </span>
-                )}
-              </div>
-            </div>
+      {/* Provider Mode Banner if Provider */}
+      {isAuthenticated && user && (user.roles?.includes("provider") || user.has_provider_profile) && (
+        <div className="rounded-[20px] border border-[#7C5CFF]/30 bg-[#7C5CFF]/10 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono uppercase tracking-wider text-[#A78BFA] font-bold">
+              Modo profesional
+            </span>
+            <ShieldCheck className="size-4 text-[#8B6BFF]" />
           </div>
-        ) : (
-          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-6 text-center shadow-sm space-y-4">
-            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-[#4F46E5] dark:text-indigo-400">
-              <User className="size-6" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                ¿Aún no iniciaste sesión?
-              </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                Accedé a tu cuenta para gestionar tus solicitudes y contrataciones.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 pt-2">
-              <Link
-                href="/login"
-                className="w-full h-10 rounded-xl bg-[#4F46E5] hover:bg-indigo-700 text-white font-medium text-sm transition flex items-center justify-center shadow-sm"
-              >
-                Iniciar sesión
-              </Link>
-              <Link
-                href="/register"
-                className="w-full h-10 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-transparent text-zinc-800 dark:text-zinc-200 font-medium text-sm transition flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800"
-              >
-                Crear cuenta
-              </Link>
-            </div>
-          </div>
-        )}
+          <p className="text-xs text-zinc-300">
+            Gestioná tu disponibilidad, trabajos recibidos y configurá tu perfil profesional.
+          </p>
+          <Link
+            href="/provider"
+            className="flex h-[44px] w-full items-center justify-center rounded-xl bg-[#7C5CFF] text-xs font-bold text-white hover:bg-[#6b47ff] transition"
+          >
+            Ir a mi panel de trabajo
+          </Link>
+        </div>
+      )}
 
-        {/* Provider Mode Card if user has provider role */}
-        {isAuthenticated && user && (user.roles?.includes("provider") || user.has_provider_profile) && (
-          <div className="rounded-2xl border-2 border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 p-4 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#4F46E5] dark:text-indigo-400">
-                Modo profesional
-              </span>
-              <ShieldCheck className="size-4 text-[#4F46E5] dark:text-indigo-400" />
-            </div>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400">
-              Gestioná tu disponibilidad, trabajos recibidos y configurá tu perfil profesional.
-            </p>
-            <Link
-              href="/provider"
-              className="flex h-[44px] w-full items-center justify-center rounded-xl bg-[#4F46E5] text-xs font-semibold text-white hover:bg-indigo-700 transition shadow-sm"
-            >
-              Ir a mi panel de trabajo
-            </Link>
-          </div>
-        )}
-
-        {/* Configuration Section */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider px-1">
-            Configuración
-          </h3>
-
-          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-700/50 shadow-sm overflow-hidden">
-            {/* Appearance Option */}
-            <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  Apariencia
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Claro, oscuro o automático
-                </p>
-              </div>
-
-              {mounted && (
-                <div className="inline-flex rounded-xl bg-zinc-100 dark:bg-zinc-900 p-1 border border-zinc-200 dark:border-zinc-700/60">
-                  <button
-                    type="button"
-                    onClick={() => setTheme("light")}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${theme === "light"
-                      ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm"
-                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-                      }`}
-                  >
-                    <Sun className="size-3.5" />
-                    <span>Claro</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTheme("system")}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${theme === "system"
-                      ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm"
-                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-                      }`}
-                  >
-                    <Monitor className="size-3.5" />
-                    <span>Auto</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTheme("dark")}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${theme === "dark"
-                      ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm"
-                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-                      }`}
-                  >
-                    <Moon className="size-3.5" />
-                    <span>Oscuro</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* My Requests Option */}
-            <Link
-              href="/my-requests"
-              className="p-4 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition group"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-[#4F46E5] dark:text-indigo-400">
-                  <ClipboardList className="size-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                    Mis solicitudes
-                  </p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Ver tus búsquedas anteriores
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="size-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200" />
-            </Link>
-
-            {/* Logout Option (only if authenticated) */}
-            {isAuthenticated && (
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={isLoading}
-                className="w-full p-4 flex items-center justify-between text-left hover:bg-red-50/50 dark:hover:bg-red-950/20 transition group"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="flex size-8 items-center justify-center rounded-lg bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400">
-                    <LogOut className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-red-600 dark:text-red-400">
-                      Cerrar sesión
-                    </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      Salir de tu cuenta actual
-                    </p>
-                  </div>
-                </div>
-              </button>
-            )}
-          </div>
+      {/* Appearance Segmented Control */}
+      <div className="space-y-3">
+        <div className="text-[10.5px] font-mono tracking-widest uppercase text-zinc-500 font-semibold">
+          Apariencia
+        </div>
+        <div className="flex gap-2 p-1.5 rounded-[16px] bg-white/5 border border-white/9">
+          <button
+            type="button"
+            onClick={() => setTheme("light")}
+            className={`flex-1 h-[44px] rounded-[12px] text-[13.5px] font-semibold transition cursor-pointer ${
+              theme === "light"
+                ? "bg-gradient-to-b from-white/14 to-white/6 border border-white/16 text-[#F4F3F7] shadow-sm"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Claro
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme("system")}
+            className={`flex-1 h-[44px] rounded-[12px] text-[13.5px] font-semibold transition cursor-pointer ${
+              theme === "system"
+                ? "bg-gradient-to-b from-white/14 to-white/6 border border-white/16 text-[#F4F3F7] shadow-sm"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Automático
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme("dark")}
+            className={`flex-1 h-[44px] rounded-[12px] text-[13.5px] font-semibold transition cursor-pointer ${
+              theme === "dark"
+                ? "bg-gradient-to-b from-white/14 to-white/6 border border-white/16 text-[#F4F3F7] shadow-sm"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Oscuro
+          </button>
         </div>
       </div>
-    </main>
+
+      {/* Settings List Rows */}
+      <div className="divide-y divide-white/6 pt-2">
+        <Link
+          href="/my-requests"
+          className="flex items-center justify-between py-4 group cursor-pointer"
+        >
+          <span className="text-[16px] font-semibold text-[#F4F3F7] group-hover:text-indigo-300 transition">
+            Mis solicitudes
+          </span>
+          <ChevronRight className="size-4 text-zinc-500 group-hover:text-white transition" />
+        </Link>
+        <div className="flex items-center justify-between py-4 group cursor-pointer">
+          <span className="text-[16px] font-semibold text-[#F4F3F7] group-hover:text-indigo-300 transition">
+            Direcciones guardadas
+          </span>
+          <ChevronRight className="size-4 text-zinc-500 group-hover:text-white transition" />
+        </div>
+        <div className="flex items-center justify-between py-4 group cursor-pointer">
+          <span className="text-[16px] font-semibold text-[#F4F3F7] group-hover:text-indigo-300 transition">
+            Notificaciones
+          </span>
+          <ChevronRight className="size-4 text-zinc-500 group-hover:text-white transition" />
+        </div>
+        <div className="flex items-center justify-between py-4 group cursor-pointer">
+          <span className="text-[16px] font-semibold text-[#F4F3F7] group-hover:text-indigo-300 transition">
+            Ayuda
+          </span>
+          <ChevronRight className="size-4 text-zinc-500 group-hover:text-white transition" />
+        </div>
+      </div>
+
+      {/* Footer / Logout */}
+      <div className="pt-6 flex items-center justify-between">
+        {isAuthenticated ? (
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="text-[15px] font-semibold text-zinc-400 hover:text-red-400 transition flex items-center gap-2"
+          >
+            <LogOut className="size-4" />
+            <span>Cerrar sesión</span>
+          </button>
+        ) : (
+          <Link
+            href="/login"
+            className="text-[15px] font-semibold text-[#8B6BFF] hover:text-indigo-300 transition"
+          >
+            Iniciar sesión
+          </Link>
+        )}
+        <span className="text-[11px] font-mono text-zinc-600">v 2.0</span>
+      </div>
+    </ScreenShell>
   );
 }

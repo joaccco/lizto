@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import "@fontsource-variable/inter";
 
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ConditionalBottomNav } from "@/components/layout/ConditionalBottomNav";
+import { ProviderIncomingRequestModal } from "@/components/layout/ProviderIncomingRequestModal";
 import { AuthProvider } from "@/context/AuthContext";
-
 import { ToastProvider } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
@@ -19,12 +18,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="h-full antialiased" suppressHydrationWarning>
-      <body className="min-h-full flex flex-col font-sans bg-slate-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <html lang="es" className="h-full antialiased dark" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-full flex flex-col font-sans bg-[#08080A] text-[#F4F3F7]">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <ToastProvider>
             <AuthProvider>
-              <main className="pb-16 flex-1">{children}</main>
+              <main className="pb-24 flex-1">{children}</main>
+              <ProviderIncomingRequestModal />
               <ConditionalBottomNav />
             </AuthProvider>
           </ToastProvider>

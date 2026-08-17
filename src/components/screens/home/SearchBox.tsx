@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, MapPin, Navigation, Sparkles } from "lucide-react";
+import { ArrowRight, MapPin, Navigation, Sparkles } from "lucide-react";
 import { FormEvent, useEffect, useState, forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
@@ -15,10 +15,10 @@ interface SearchBoxProps {
 }
 
 const PLACEHOLDERS = [
+  "Tengo una pérdida de agua debajo de la pileta...",
   "Me quedé afuera de mi casa...",
-  "Tengo una pérdida de agua...",
-  "Necesito un fotógrafo para el sábado...",
-  "No sé a quién llamar para...",
+  "Necesito un fotógrafo para eventos...",
+  "No sé a quién llamar para una fuga de gas...",
 ];
 
 export const SearchBox = forwardRef<HTMLTextAreaElement, SearchBoxProps>(
@@ -27,9 +27,9 @@ export const SearchBox = forwardRef<HTMLTextAreaElement, SearchBoxProps>(
     const [placeholderIndex, setPlaceholderIndex] = useState(0);
     const [address, setAddress] = useState(() => {
       if (typeof window !== "undefined") {
-        return sessionStorage.getItem("location_address") || "";
+        return sessionStorage.getItem("location_address") || "Thames 1842, Palermo";
       }
-      return "";
+      return "Thames 1842, Palermo";
     });
     const [isLocating, setIsLocating] = useState(false);
 
@@ -46,7 +46,7 @@ export const SearchBox = forwardRef<HTMLTextAreaElement, SearchBoxProps>(
     useEffect(() => {
       const interval = setInterval(() => {
         setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length);
-      }, 3000);
+      }, 3500);
       return () => clearInterval(interval);
     }, []);
 
@@ -81,8 +81,8 @@ export const SearchBox = forwardRef<HTMLTextAreaElement, SearchBoxProps>(
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      const trimmed = prompt.trim();
-      if (!trimmed || isLoading || disabled) {
+      const trimmed = prompt.trim() || PLACEHOLDERS[placeholderIndex];
+      if (isLoading || disabled) {
         return;
       }
       if (typeof window !== "undefined" && address) {
@@ -91,9 +91,24 @@ export const SearchBox = forwardRef<HTMLTextAreaElement, SearchBoxProps>(
       onSubmit(trimmed);
     };
 
+    // AI dynamic interpretation chips
+    const getChips = () => {
+      const p = prompt.toLowerCase();
+      const chips = [];
+      if (p.includes("agua") || p.includes("pileta") || p.includes("caño") || p.includes("plomer")) chips.push("Plomería");
+      else if (p.includes("luz") || p.includes("cable") || p.includes("electric")) chips.push("Electricidad");
+      else if (p.includes("puerta") || p.includes("llave") || p.includes("cerraj")) chips.push("Cerrajería");
+      else if (p.includes("foto") || p.includes("evento")) chips.push("Fotografía");
+      else chips.push("General");
+
+      chips.push("Urgente", "Domicilio", "Hoy");
+      return chips;
+    };
+
     return (
-      <form onSubmit={handleSubmit} className={cn("space-y-3", className)}>
-        <div className="rounded-[24px] border-2 border-indigo-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-4 shadow-sm transition focus-within:border-[#4F46E5] focus-within:ring-4 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-950">
+      <form onSubmit={handleSubmit} className={cn("space-y-4", className)}>
+        {/* Glass Card Container */}
+        <div className="rounded-[26px] p-5 bg-gradient-to-b from-white/10 to-white/[0.035] backdrop-blur-[28px] border border-white/14 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_18px_44px_rgba(0,0,0,0.5)] transition focus-within:border-[#8B6BFF] focus-within:ring-2 focus-within:ring-[#7C5CFF]/30">
           <label htmlFor="service-request" className="sr-only">
             Describí el servicio que necesitás
           </label>
@@ -105,46 +120,63 @@ export const SearchBox = forwardRef<HTMLTextAreaElement, SearchBoxProps>(
             placeholder={PLACEHOLDERS[placeholderIndex]}
             disabled={isLoading || disabled}
             rows={3}
-            className="min-h-24 w-full resize-none bg-transparent px-1 py-1 text-[18px] leading-7 text-zinc-900 dark:text-zinc-100 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500 placeholder:transition-all"
+            className="min-h-20 w-full resize-none bg-transparent px-1 py-1 text-[16px] leading-relaxed text-[#F4F3F7] outline-none placeholder:text-zinc-500 font-medium"
           />
 
-          {/* Location Input & Geolocation step */}
-          <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-700/60 flex items-center gap-2">
-            <MapPin className="size-4 text-zinc-400 shrink-0" />
+          <div className="h-px bg-white/10 my-3" />
+
+          {/* Location row */}
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <span className="size-2 rounded-full bg-[#A8FF35] shadow-[0_0_10px_rgba(168,255,53,0.8)] shrink-0" />
             <input
               type="text"
               value={address}
               onChange={(e) => handleAddressChange(e.target.value)}
-              placeholder="¿Dónde necesitás el servicio? Ej: Córdoba 456, Corrientes"
-              className="flex-1 bg-transparent text-xs text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 outline-none"
+              placeholder="Thames 1842, Palermo"
+              className="flex-1 bg-transparent text-xs font-medium text-zinc-300 placeholder-zinc-500 outline-none"
             />
             <button
               type="button"
               onClick={handleGetCurrentLocation}
               disabled={isLocating}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-[10px] font-semibold text-[#4F46E5] hover:bg-indigo-100 transition shrink-0"
+              className="text-[12px] font-semibold text-[#8B6BFF] hover:text-indigo-300 transition shrink-0"
             >
-              <Navigation className={`size-3 ${isLocating ? "animate-spin" : ""}`} />
-              <span>{isLocating ? "Ubicando..." : "Ubicación actual"}</span>
+              {isLocating ? "Ubicando..." : "Ubicación actual"}
             </button>
           </div>
 
-          <div className="mt-3 flex items-center justify-between gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-700/60">
-            <span className="inline-flex items-center gap-1.5 pl-1 text-xs font-semibold text-[#4F46E5] dark:text-indigo-400">
-              <Sparkles className="size-4" />
-              Lizto entiende tu pedido
-            </span>
-            <button
-              type="submit"
-              disabled={!prompt.trim() || isLoading || disabled}
-              className="flex h-[56px] min-w-[56px] shrink-0 items-center justify-center rounded-2xl bg-[#4F46E5] text-white transition hover:bg-indigo-700 disabled:bg-zinc-200 dark:disabled:bg-zinc-700 disabled:text-zinc-400 shadow-sm"
-              aria-label="Buscar profesionales"
-            >
-              <ArrowUp className="size-6" />
-            </button>
+          {/* AI interpretation header & chips */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center gap-2">
+              <span className="size-1.5 rounded-full bg-[#8B6BFF] animate-pulse" />
+              <span className="text-[10.5px] font-mono tracking-wider uppercase text-[#A78BFA] font-medium">
+                Lizto entiende tu pedido
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {getChips().map((chip, idx) => (
+                <span
+                  key={chip + idx}
+                  className="px-3 py-1 rounded-full bg-[#7C5CFF]/18 border border-[#7C5CFF]/42 text-[#C4B5FD] text-[12px] font-mono font-medium animate-in fade-in duration-300"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-        <p className="px-1 text-[13px] text-zinc-500 dark:text-zinc-400 font-medium text-center">
+
+        {/* Action Button */}
+        <button
+          type="submit"
+          disabled={isLoading || disabled}
+          className="h-[56px] w-full rounded-[16px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-white font-bold text-base flex items-center justify-center gap-2.5 transition shadow-[0_14px_38px_rgba(124,92,255,0.45)] disabled:opacity-60 cursor-pointer"
+        >
+          <span>{isLoading ? "Analizando..." : "Resolver esto"}</span>
+          <ArrowRight className="size-5" />
+        </button>
+
+        <p className="text-center text-[13px] text-zinc-500 font-medium">
           Contanos con tus palabras. Lizto entiende.
         </p>
       </form>

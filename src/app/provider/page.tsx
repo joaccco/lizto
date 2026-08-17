@@ -15,18 +15,18 @@ import {
   Loader2,
   Lock,
   MapPin,
+  MessageSquare,
   Scale,
   Sparkles,
-  User,
   UserCheck,
   Zap,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
 import { ENDPOINTS } from "@/lib/endpoints";
 
@@ -46,6 +46,9 @@ const categoryIcons: Record<string, LucideIcon> = {
 
 interface WorkRequestItem {
   id: string;
+  service_request_id?: string;
+  work_id?: string;
+  conversation_id?: string;
   category: string;
   category_slug?: string;
   raw_prompt: string;
@@ -56,31 +59,49 @@ interface WorkRequestItem {
   created_at?: string;
 }
 
-interface CalendarEvent {
+interface AgendaEvent {
+  id: string;
+  work_id: string;
+  client_name: string;
+  client_email?: string;
+  job_type: string;
+  category?: string;
+  address: string;
+  status: string;
+  scheduled_at: string;
+  day: number;
+  month: number;
+  year: number;
+  time: string;
+  estimated_duration_min?: number;
+  agreed_price?: number | null;
+}
+
+interface CalendarEventDisplay {
   id: string;
   time: string;
   clientName: string;
   jobType: string;
   address: string;
-  status: "pending" | "confirmed" | "in_progress";
+  status: string;
 }
 
-const MOCK_AGENDA: Record<number, CalendarEvent[]> = {
+const MOCK_AGENDA: Record<number, CalendarEventDisplay[]> = {
   15: [
     {
       id: "ev-1",
       time: "09:30",
       clientName: "Juan Pérez",
-      jobType: "Cambio de combinación",
-      address: "Av. Corrientes 1240",
+      jobType: "Cambio de combinación de cerradura",
+      address: "Av. Corrientes 1240, CABA",
       status: "confirmed",
     },
     {
       id: "ev-2",
       time: "14:00",
-      clientName: "María López",
-      jobType: "Apertura de puerta",
-      address: "Palermo, CABA",
+      clientName: "María García",
+      jobType: "Apertura de puerta blindada trabada",
+      address: "Thames 1842, Palermo",
       status: "in_progress",
     },
   ],
@@ -88,62 +109,56 @@ const MOCK_AGENDA: Record<number, CalendarEvent[]> = {
     {
       id: "ev-3",
       time: "11:00",
-      clientName: "Carlos R.",
-      jobType: "Instalación de cerrojo",
-      address: "Belgrano",
-      status: "pending",
-    },
-  ],
-  22: [
-    {
-      id: "ev-4",
-      time: "16:30",
-      clientName: "Ana K.",
-      jobType: "Cerrajería urgente",
-      address: "Recoleta",
+      clientName: "Carlos López",
+      jobType: "Instalación de cerradura digital inteligente",
+      address: "Av. Santa Fe 3400, Recoleta",
       status: "confirmed",
     },
   ],
 };
 
-export default function ProviderDashboardPage() {
+export default function ProviderPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"jobs" | "agenda" | "profile">("jobs");
+  const [activeTab, setActiveTab] = useState<"jobs" | "calendar">("jobs");
   const [availability, setAvailability] = useState<"available" | "busy" | "unavailable">("available");
-  const [workRequests, setWorkRequests] = useState<WorkRequestItem[]>([]);
-  const [activeWork, setActiveWork] = useState<WorkRequestItem | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false);
 
-  // Calendar state
-  const todayDate = new Date().getDate();
+  const [workRequests, setWorkRequests] = useState<WorkRequestItem[]>([]);
+  const [activeWorks, setActiveWorks] = useState<WorkRequestItem[]>([]);
+  const [agendaEvents, setAgendaEvents] = useState<AgendaEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [currentMonth] = useState("Agosto 2026");
   const [selectedDay, setSelectedDay] = useState<number>(15);
 
-  // Accept Modal State
   const [selectedRequest, setSelectedRequest] = useState<WorkRequestItem | null>(null);
   const [estimatedDuration, setEstimatedDuration] = useState<number>(30);
+  const [scheduledDate, setScheduledDate] = useState<string>("");
   const [isConfirming, setIsConfirming] = useState(false);
 
-  // Provider Cancel Modal State
   const [showProviderCancelModal, setShowProviderCancelModal] = useState(false);
+  const [selectedCancelWorkId, setSelectedCancelWorkId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("Emergencia personal");
   const [isCancellingWork, setIsCancellingWork] = useState(false);
 
   const handleConfirmProviderCancel = async () => {
-    if (!activeWork) return;
+    const targetWorkId = selectedCancelWorkId || activeWorks[0]?.work_id || activeWorks[0]?.id;
+    if (!targetWorkId) return;
+
     setIsCancellingWork(true);
     try {
-      await apiFetch(ENDPOINTS.WORK_CANCEL(activeWork.id), {
+      await apiFetch(ENDPOINTS.WORK_CANCEL(targetWorkId), {
         method: "POST",
         body: JSON.stringify({ reason: cancelReason }),
       });
-      setAvailability("available");
       setShowProviderCancelModal(false);
+      setSelectedCancelWorkId(null);
       fetchData();
     } catch {
       setShowProviderCancelModal(false);
+      setSelectedCancelWorkId(null);
       fetchData();
     } finally {
       setIsCancellingWork(false);
@@ -166,13 +181,20 @@ export default function ProviderDashboardPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const res = await apiFetch<{ data: WorkRequestItem[] }>(ENDPOINTS.WORK_REQUESTS);
-      const items = res.data || [];
-      const pending = items.filter((i) => i.status !== "confirmed" && i.status !== "completed");
-      const active = items.find((i) => i.status === "confirmed" || i.status === "in_progress");
+      const [resRequests, resAgenda] = await Promise.all([
+        apiFetch<{ data: WorkRequestItem[] }>(ENDPOINTS.WORK_REQUESTS),
+        apiFetch<{ data: AgendaEvent[] }>(ENDPOINTS.PROVIDER_AGENDA).catch(() => ({ data: [] })),
+      ]);
+
+      const items = resRequests.data || [];
+      const activeStatuses = ["confirmed", "in_progress", "pending_diagnosis_quote"];
+      
+      const pending = items.filter((i) => !activeStatuses.includes(i.status) && i.status !== "completed" && i.status !== "cancelled");
+      const activeList = items.filter((i) => activeStatuses.includes(i.status));
 
       setWorkRequests(pending);
-      setActiveWork(active || null);
+      setActiveWorks(activeList);
+      setAgendaEvents(resAgenda.data || []);
     } catch {
       // keep default
     } finally {
@@ -205,9 +227,13 @@ export default function ProviderDashboardPage() {
     if (!selectedRequest) return;
     setIsConfirming(true);
     try {
+      const payload: Record<string, any> = { estimated_duration_min: estimatedDuration };
+      if (scheduledDate) {
+        payload.scheduled_at = scheduledDate;
+      }
       await apiFetch(ENDPOINTS.WORK_CONFIRM(selectedRequest.id), {
         method: "POST",
-        body: JSON.stringify({ estimated_duration_min: estimatedDuration }),
+        body: JSON.stringify(payload),
       });
       setSelectedRequest(null);
       fetchData();
@@ -230,7 +256,6 @@ export default function ProviderDashboardPage() {
   const handleCompleteActiveWork = async (workId: string) => {
     try {
       await apiFetch(ENDPOINTS.WORK_COMPLETE(workId), { method: "POST" });
-      setAvailability("available");
       fetchData();
     } catch {
       // ignore
@@ -247,167 +272,207 @@ export default function ProviderDashboardPage() {
         .toUpperCase()
     : "RM";
 
-  if (authLoading || isLoading) {
-    return (
-      <div className="min-h-screen bg-[#0f0f0f] text-white flex items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-[#4F46E5]" />
-      </div>
-    );
-  }
+  const daysWithEvents = useMemo(() => {
+    const set = new Set<number>();
+    agendaEvents.forEach((ev) => set.add(ev.day));
+    Object.keys(MOCK_AGENDA).forEach((d) => set.add(Number(d)));
+    return set;
+  }, [agendaEvents]);
 
-  const dayEvents = MOCK_AGENDA[selectedDay] || [];
+  const selectedEvents: CalendarEventDisplay[] = useMemo(() => {
+    if (agendaEvents.length > 0) {
+      const matched = agendaEvents.filter((ev) => ev.day === selectedDay);
+      if (matched.length > 0) {
+        return matched.map((ev) => ({
+          id: ev.id,
+          time: ev.time || "09:00",
+          clientName: ev.client_name,
+          jobType: ev.job_type,
+          address: ev.address,
+          status: ev.status,
+        }));
+      }
+    }
+    return (MOCK_AGENDA[selectedDay] || []).map((ev) => ({
+      id: ev.id,
+      time: ev.time,
+      clientName: ev.clientName,
+      jobType: ev.jobType,
+      address: ev.address,
+      status: ev.status,
+    }));
+  }, [agendaEvents, selectedDay]);
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-zinc-100 pb-28">
-      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
-        {/* HEADER: Nombre del profesional + categoría / Avatar con iniciales a la derecha */}
-        <header className="flex items-center justify-between pt-1">
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">{user?.name || "Roberto Medina"}</h1>
-            <p className="text-xs font-medium text-zinc-400">Cerrajero matriculado • Lizto Pro</p>
-          </div>
-          <div className="flex size-12 items-center justify-center rounded-2xl bg-[#1e1b4b] border border-indigo-900 text-base font-bold text-indigo-300 shadow-md">
-            {userInitials}
-          </div>
-        </header>
-
-        {/* BLOQUE DE DISPONIBILIDAD */}
-        <section className="rounded-3xl bg-[#1a1a1a] border border-zinc-800 p-5 space-y-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="relative flex size-3">
-                <span
-                  className={`absolute inline-flex size-full animate-ping rounded-full opacity-75 ${
-                    availability === "available"
-                      ? "bg-emerald-400"
-                      : availability === "busy"
-                      ? "bg-amber-400"
-                      : "bg-zinc-500"
-                  }`}
-                />
-                <span
-                  className={`relative inline-flex size-3 rounded-full ${
-                    availability === "available"
-                      ? "bg-emerald-500"
-                      : availability === "busy"
-                      ? "bg-amber-500"
-                      : "bg-zinc-500"
-                  }`}
-                />
-              </span>
-              <h2 className="text-xl font-bold text-white">
-                {availability === "available"
-                  ? "Disponible"
-                  : availability === "busy"
-                  ? "Ocupado"
-                  : "No disponible"}
-              </h2>
+    <div className="min-h-screen bg-[#08080A] text-[#F4F3F7] font-sans pb-24">
+      {/* HEADER PRINCIPAL */}
+      <header className="sticky top-0 z-20 bg-[#08080A]/90 backdrop-blur-xl border-b border-white/9 px-4 py-4">
+        <div className="max-w-md mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="size-11 rounded-2xl bg-[#7C5CFF] flex items-center justify-center font-bold text-white shadow-lg shadow-[#7C5CFF]/30 text-base">
+              {userInitials}
             </div>
-            {isUpdatingAvailability && <Loader2 className="size-4 animate-spin text-emerald-400" />}
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base font-bold text-[#F4F3F7]">Hola, {firstName}</h1>
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#7C5CFF]/15 px-2 py-0.5 text-[10px] font-bold text-[#C4B5FD] border border-[#7C5CFF]/30">
+                  <CheckCircle2 className="size-3 text-[#3DDC84]" /> PRO
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400 font-medium">Panel de Profesional</p>
+            </div>
           </div>
 
-          {/* Toggle de 3 opciones */}
-          <div className="grid grid-cols-3 gap-2 pt-1">
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => handleUpdateAvailability("available")}
-              className={`flex h-[56px] items-center justify-center rounded-2xl border text-xs font-bold transition ${
+              onClick={() => handleUpdateAvailability(availability === "available" ? "busy" : "available")}
+              disabled={isUpdatingAvailability}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition border cursor-pointer ${
                 availability === "available"
-                  ? "bg-[#052e16] border-emerald-600 text-emerald-300 shadow-sm"
-                  : "bg-[#0f0f0f] border-zinc-800 text-zinc-400 hover:text-white"
+                  ? "bg-[#A8FF35]/12 text-[#A8FF35] border-[#A8FF35]/30"
+                  : availability === "busy"
+                  ? "bg-[#F2B441]/12 text-[#F2B441] border-[#F2B441]/30"
+                  : "bg-white/5 text-zinc-400 border-white/10"
               }`}
             >
-              Disponible
-            </button>
-            <button
-              type="button"
-              onClick={() => handleUpdateAvailability("busy")}
-              className={`flex h-[56px] items-center justify-center rounded-2xl border text-xs font-bold transition ${
-                availability === "busy"
-                  ? "bg-[#451a03] border-amber-600 text-amber-300 shadow-sm"
-                  : "bg-[#0f0f0f] border-zinc-800 text-zinc-400 hover:text-white"
-              }`}
-            >
-              Ocupado
-            </button>
-            <button
-              type="button"
-              onClick={() => handleUpdateAvailability("unavailable")}
-              className={`flex h-[56px] items-center justify-center rounded-2xl border text-xs font-bold transition ${
-                availability === "unavailable"
-                  ? "bg-zinc-800 border-zinc-600 text-zinc-200 shadow-sm"
-                  : "bg-[#0f0f0f] border-zinc-800 text-zinc-400 hover:text-white"
-              }`}
-            >
-              No disponible
+              <span className={`size-2 rounded-full ${
+                availability === "available" ? "bg-[#A8FF35] animate-pulse" : availability === "busy" ? "bg-[#F2B441]" : "bg-zinc-500"
+              }`} />
+              {availability === "available" ? "Disponible" : availability === "busy" ? "Ocupado" : "No disponible"}
             </button>
           </div>
-        </section>
+        </div>
+      </header>
 
-        {/* BENTO GRID 2 COLUMNAS */}
+      <main className="max-w-md mx-auto px-4 pt-4 space-y-6">
+        {/* NAVEGACIÓN DE TABS */}
+        <div className="flex gap-1.5 p-1.5 rounded-[16px] bg-white/5 border border-white/9">
+          <button
+            type="button"
+            onClick={() => setActiveTab("jobs")}
+            className={`flex-1 flex items-center justify-center gap-2 h-[44px] rounded-[12px] text-xs font-bold transition cursor-pointer ${
+              activeTab === "jobs"
+                ? "bg-gradient-to-b from-white/14 to-white/6 border border-white/16 shadow-[inset_0_1px_0_rgba(255,255,255,0.24)] text-[#F4F3F7]"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <ClipboardList className="size-4" />
+            Solicitudes {workRequests.length > 0 && `(${workRequests.length})`}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("calendar")}
+            className={`flex-1 flex items-center justify-center gap-2 h-[44px] rounded-[12px] text-xs font-bold transition cursor-pointer ${
+              activeTab === "calendar"
+                ? "bg-gradient-to-b from-white/14 to-white/6 border border-white/16 shadow-[inset_0_1px_0_rgba(255,255,255,0.24)] text-[#F4F3F7]"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <CalendarIcon className="size-4" />
+            Mi Agenda {agendaEvents.length > 0 && `(${agendaEvents.length})`}
+          </button>
+        </div>
+
+        {/* METRICAS RÁPIDAS (BENTO HEADER) */}
         <section className="grid grid-cols-2 gap-3">
-          {/* Bloque Indigo oscuro: HOY */}
-          <div className="rounded-3xl bg-[#1e1b4b] border border-indigo-900 p-5 space-y-1">
-            <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider">Hoy</span>
-            <div className="text-3xl font-black text-white">{workRequests.length}</div>
-            <p className="text-[11px] text-indigo-200 font-medium">Solicitudes nuevas</p>
+          <div className="rounded-[20px] bg-[#131318] border border-white/8 p-4 space-y-1">
+            <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-wider">Rating General</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-extrabold text-[#F4F3F7]">4.9</span>
+              <span className="text-xs text-[#F2B441] font-bold">★</span>
+            </div>
+            <p className="text-[10px] text-zinc-500 font-medium">87 reseñas verificadas</p>
           </div>
 
-          {/* Bloque neutro: ESTE MES */}
-          <div className="rounded-3xl bg-[#1a1a1a] border border-zinc-800 p-5 space-y-1">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Este mes</span>
-            <div className="text-3xl font-black text-white">28</div>
-            <p className="text-[11px] text-zinc-400 font-medium">Trabajos completados</p>
+          <div className="rounded-[20px] bg-[#131318] border border-white/8 p-4 space-y-1">
+            <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-wider">Trabajos Activos</span>
+            <div className="text-2xl font-extrabold text-[#3DDC84]">{activeWorks.length}</div>
+            <p className="text-[10px] text-zinc-500 font-medium">En curso actualmente</p>
           </div>
         </section>
 
-        {/* TAB NAVIGATION: MIS TRABAJOS / AGENDA */}
+        {/* TAB 1: SOLICITUDES Y TRABAJOS EN CURSO */}
         {activeTab === "jobs" && (
           <div className="space-y-6">
-            {/* SECCIÓN TRABAJO ACTIVO (si existe) */}
-            {activeWork && (
+            {/* SECCIÓN TRABAJOS EN CURSO */}
+            {activeWorks.length > 0 && (
               <section className="space-y-3 pt-2">
-                <h3 className="text-base font-bold text-white">Tu trabajo en curso</h3>
-                <div className="rounded-3xl bg-[#052e16] border border-emerald-700/60 p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-emerald-300 uppercase">En progreso</span>
-                    <UserCheck className="size-5 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-bold text-white">Cliente: {activeWork.client_name}</h4>
-                    <p className="text-xs text-emerald-200 mt-1">{activeWork.raw_prompt}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => handleCompleteActiveWork(activeWork.id)}
-                      className="flex h-[56px] w-full items-center justify-center rounded-2xl bg-emerald-600 text-sm font-bold text-white hover:bg-emerald-500 transition shadow-sm"
-                    >
-                      Marcar como terminado
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowProviderCancelModal(true)}
-                      className="flex h-[44px] w-full items-center justify-center rounded-xl border border-red-900/80 bg-transparent text-xs font-bold text-red-400 hover:bg-red-950/40 transition"
-                    >
-                      No puedo continuar
-                    </button>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-[#F4F3F7]">Tus trabajos en curso</h3>
+                  <span className="text-xs text-[#3DDC84] font-semibold">{activeWorks.length} activos</span>
+                </div>
+                <div className="space-y-3">
+                  {activeWorks.map((work) => {
+                    const targetId = work.work_id || work.id;
+                    const isDiagnosis = work.status === "pending_diagnosis_quote";
+
+                    return (
+                      <div key={targetId} className="rounded-[24px] bg-gradient-to-b from-[#3DDC84]/12 to-[#3DDC84]/4 backdrop-blur-xl border border-[#3DDC84]/35 p-5 space-y-4 shadow-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-mono font-bold text-[#3DDC84] uppercase tracking-wider">
+                            {isDiagnosis ? "Evaluación Presencial" : "En progreso"}
+                          </span>
+                          <UserCheck className="size-5 text-[#3DDC84]" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-[#F4F3F7]">Cliente: {work.client_name}</h4>
+                          <p className="text-xs text-zinc-300 mt-1">«{work.raw_prompt}»</p>
+                          {work.location && (
+                            <p className="text-xs text-zinc-400 mt-1 flex items-center gap-1">
+                              <MapPin className="size-3 text-[#3DDC84]" /> {work.location}
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          {work.conversation_id && (
+                            <Link
+                              href={`/conversations/${work.conversation_id}`}
+                              className="flex h-[44px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#3DDC84]/20 border border-[#3DDC84]/40 text-xs font-bold text-[#3DDC84] hover:bg-[#3DDC84]/30 transition"
+                            >
+                              <MessageSquare className="size-4" /> Abrir Chat con Cliente
+                            </Link>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleCompleteActiveWork(targetId)}
+                            className="flex h-[56px] w-full items-center justify-center rounded-[16px] bg-[#3DDC84] text-[#08080A] text-sm font-extrabold hover:bg-[#32c774] transition shadow-md cursor-pointer"
+                          >
+                            Marcar como terminado
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCancelWorkId(targetId);
+                              setShowProviderCancelModal(true);
+                            }}
+                            className="flex h-[44px] w-full items-center justify-center rounded-[14px] border border-[#FF5A5A]/40 bg-transparent text-xs font-bold text-[#FF5A5A] hover:bg-[#FF5A5A]/10 transition cursor-pointer"
+                          >
+                            No puedo continuar
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             )}
 
-            {/* SECCIÓN TE ESTÁN BUSCANDO */}
+            {/* SECCIÓN SOLICITUDES ENTRANTES */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-white">Te están buscando</h3>
-                <span className="text-xs text-zinc-400">{workRequests.length} pendientes</span>
+                <h3 className="text-base font-bold text-[#F4F3F7]">Te están buscando</h3>
+                <span className="text-xs text-zinc-400 font-mono">{workRequests.length} pendientes</span>
               </div>
 
-              {workRequests.length === 0 ? (
-                <div className="rounded-3xl bg-[#1a1a1a] border border-zinc-800 p-8 text-center space-y-2">
+              {isLoading ? (
+                <div className="flex py-12 justify-center">
+                  <Loader2 className="size-6 animate-spin text-[#8B6BFF]" />
+                </div>
+              ) : workRequests.length === 0 ? (
+                <div className="rounded-[24px] bg-[#131318] border border-white/8 p-8 text-center space-y-2">
                   <Clock className="mx-auto size-8 text-zinc-500" />
-                  <p className="text-sm font-bold text-zinc-300">No hay solicitudes por ahora</p>
+                  <p className="text-sm font-bold text-[#F4F3F7]">No hay solicitudes por ahora</p>
                   <p className="text-xs text-zinc-500">Asegurate de estar disponible para recibirlas.</p>
                 </div>
               ) : (
@@ -418,52 +483,48 @@ export default function ProviderDashboardPage() {
                     return (
                       <div
                         key={req.id}
-                        className="rounded-3xl bg-[#1a1a1a] border border-zinc-800 p-5 space-y-4 shadow-sm"
+                        className="rounded-[24px] bg-[#131318] border border-white/9 p-5 space-y-4 shadow-sm"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#1e1b4b] text-indigo-300">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-[#7C5CFF]/12 border border-[#7C5CFF]/30 text-[#C4B5FD]">
                               <Icon className="size-5" />
                             </div>
                             <div>
-                              <h4 className="text-sm font-bold text-white">{req.client_name}</h4>
+                              <h4 className="text-sm font-bold text-[#F4F3F7]">{req.client_name}</h4>
                               <p className="text-xs text-zinc-400">{req.category}</p>
                             </div>
                           </div>
-                          <span className="rounded-full bg-red-950/80 px-2.5 py-1 text-[10px] font-bold text-red-400 border border-red-800">
+                          <span className="rounded-full bg-[#FF5A5A]/14 px-2.5 py-1 text-[10px] font-mono font-bold text-[#FF5A5A] border border-[#FF5A5A]/40 uppercase">
                             Urgente
                           </span>
                         </div>
 
-                        <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed font-medium">
                           "{req.raw_prompt}"
                         </p>
 
-                        <div className="space-y-1 text-xs text-zinc-400 border-t border-zinc-800/80 pt-2">
+                        <div className="space-y-1 text-xs text-zinc-400 border-t border-white/7 pt-3">
                           <div className="flex items-center gap-1.5 font-medium text-zinc-300">
-                            <MapPin className="size-3.5 text-[#4F46E5]" />
-                            <span>{req.location || "Zona Centro, Corrientes"}</span>
+                            <MapPin className="size-3.5 text-[#8B6BFF]" />
+                            <span>{req.location || "Barrio Centro, Corrientes"}</span>
                           </div>
-                          <p className="text-[11px] text-zinc-400 pl-5">
-                            El cliente está a 2.3 km de tu ubicación
-                          </p>
                         </div>
 
-                        {/* Botones */}
-                        <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="flex gap-2 pt-1">
                           <button
                             type="button"
                             onClick={() => setSelectedRequest(req)}
-                            className="flex h-[56px] items-center justify-center rounded-2xl bg-[#4F46E5] text-xs font-bold text-white hover:bg-indigo-600 transition shadow-sm"
+                            className="flex-1 flex h-[48px] items-center justify-center rounded-[14px] bg-[#7C5CFF] text-xs font-bold text-white hover:bg-[#6b47ff] transition shadow-[0_10px_26px_rgba(124,92,255,0.4)] cursor-pointer"
                           >
                             Aceptar trabajo
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeclineWork(req.id)}
-                            className="flex h-[56px] items-center justify-center rounded-2xl border border-red-900 bg-[#0f0f0f] text-xs font-bold text-red-400 hover:bg-red-950/40 transition"
+                            className="flex h-[48px] px-4 items-center justify-center rounded-[14px] border border-white/12 bg-transparent text-xs font-bold text-zinc-400 hover:bg-white/5 transition cursor-pointer"
                           >
-                            No puedo ahora
+                            Declinar
                           </button>
                         </div>
                       </div>
@@ -475,229 +536,209 @@ export default function ProviderDashboardPage() {
           </div>
         )}
 
-        {/* SECCIÓN MI AGENDA */}
-        {activeTab === "agenda" && (
-          <section className="space-y-6 pt-2">
-            <div className="space-y-3">
-              <h3 className="text-base font-bold text-white">Mi agenda — Julio 2026</h3>
-
-              {/* Calendario mensual compacto */}
-              <div className="rounded-3xl bg-[#1a1a1a] border border-zinc-800 p-4 space-y-3">
-                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-zinc-500 uppercase">
-                  <span>Lu</span>
-                  <span>Ma</span>
-                  <span>Mi</span>
-                  <span>Ju</span>
-                  <span>Vi</span>
-                  <span>Sá</span>
-                  <span>Do</span>
-                </div>
-
-                <div className="grid grid-cols-7 gap-1.5">
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
-                    const hasJobs = MOCK_AGENDA[day] !== undefined;
-                    const isToday = day === todayDate;
-                    const isSelected = day === selectedDay;
-
-                    let btnClass = "bg-[#0f0f0f] text-zinc-400 hover:bg-zinc-800";
-                    if (isToday) {
-                      btnClass = "bg-[#4F46E5] text-white font-bold shadow-md";
-                    } else if (hasJobs) {
-                      btnClass = "bg-[#1e1b4b] text-indigo-300 font-bold border border-indigo-900";
-                    }
-
-                    if (isSelected && !isToday) {
-                      btnClass += " ring-2 ring-indigo-400";
-                    }
-
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => setSelectedDay(day)}
-                        className={`flex h-10 w-full items-center justify-center rounded-xl text-xs transition ${btnClass}`}
-                      >
-                        {day}
-                      </button>
-                    );
-                  })}
+        {/* TAB 2: CALENDARIO Y AGENDA DE BASE DE DATOS */}
+        {activeTab === "calendar" && (
+          <div className="space-y-6">
+            <section className="rounded-[24px] bg-[#131318] border border-white/9 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-[#F4F3F7]">{currentMonth}</h3>
+                <div className="flex gap-1">
+                  <button type="button" className="p-1.5 rounded-lg hover:bg-white/5 text-zinc-400">
+                    <ChevronLeft className="size-4" />
+                  </button>
+                  <button type="button" className="p-1.5 rounded-lg hover:bg-white/5 text-zinc-400">
+                    <ChevronRight className="size-4" />
+                  </button>
                 </div>
               </div>
-            </div>
 
-            {/* Timeline del día seleccionado */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                Trabajos del día {selectedDay} de Julio
-              </h4>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                {["D", "L", "M", "M", "J", "V", "S"].map((d, idx) => (
+                  <span key={idx} className="text-zinc-500 font-bold py-1">
+                    {d}
+                  </span>
+                ))}
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                  const hasEvents = daysWithEvents.has(day);
+                  const isSelected = selectedDay === day;
 
-              {dayEvents.length === 0 ? (
-                <div className="rounded-2xl bg-[#1a1a1a] border border-zinc-800 p-6 text-center text-xs text-zinc-500">
-                  Sin trabajos programados para este día.
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => setSelectedDay(day)}
+                      className={`relative py-2.5 rounded-xl font-bold transition text-xs flex flex-col items-center justify-center cursor-pointer ${
+                        isSelected
+                          ? "bg-[#7C5CFF] text-white shadow-md"
+                          : hasEvents
+                          ? "bg-white/8 text-zinc-200 hover:bg-white/12"
+                          : "text-zinc-500 hover:bg-white/4"
+                      }`}
+                    >
+                      <span>{day}</span>
+                      {hasEvents && !isSelected && (
+                        <span className="size-1 rounded-full bg-[#8B6BFF] mt-1 animate-pulse" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <h3 className="text-[10.5px] font-mono tracking-wider uppercase text-zinc-500 font-semibold">
+                Trabajos agendados para el día {selectedDay} ({selectedEvents.length})
+              </h3>
+
+              {selectedEvents.length === 0 ? (
+                <div className="rounded-[20px] bg-[#131318] border border-white/8 p-6 text-center text-xs text-zinc-500">
+                  No tenés compromisos agendados para este día.
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {dayEvents.map((ev) => {
-                    const dotColor =
-                      ev.status === "confirmed"
-                        ? "bg-emerald-500"
-                        : ev.status === "in_progress"
-                        ? "bg-amber-500"
-                        : "bg-[#4F46E5]";
-
-                    return (
-                      <div
-                        key={ev.id}
-                        className="flex items-center gap-4 rounded-2xl bg-[#1a1a1a] border border-zinc-800 p-4"
-                      >
-                        <span className="text-xs font-mono font-bold text-zinc-400">{ev.time}</span>
-                        <span className={`size-2.5 rounded-full ${dotColor}`} />
-                        <div className="min-w-0 flex-1">
-                          <h5 className="text-xs font-bold text-white truncate">{ev.clientName}</h5>
-                          <p className="text-[11px] text-zinc-400 truncate">
-                            {ev.jobType} • {ev.address}
+                  {selectedEvents.map((ev) => (
+                    <div
+                      key={ev.id}
+                      className="flex items-center justify-between rounded-[18px] bg-[#131318] border border-white/8 p-4"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#7C5CFF]/15 text-[#8B6BFF] font-bold text-xs font-mono">
+                          {ev.time}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-[#F4F3F7] truncate">{ev.clientName}</h4>
+                          <p className="text-[11px] text-zinc-300 truncate">«{ev.jobType}»</p>
+                          <p className="text-[10px] text-zinc-500 mt-0.5 truncate flex items-center gap-1">
+                            <MapPin className="size-3 text-[#8B6BFF]" /> {ev.address}
                           </p>
                         </div>
                       </div>
-                    );
-                  })}
+                      <span className="shrink-0 rounded-full bg-[#3DDC84]/12 px-2.5 py-1 text-[10px] font-bold text-[#3DDC84] border border-[#3DDC84]/30 ml-2">
+                        {ev.status === "confirmed" ? "Agendado" : ev.status === "in_progress" ? "En curso" : ev.status}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
-            </div>
-          </section>
+            </section>
+          </div>
         )}
+      </main>
 
-        {/* MODAL ESTIMACIÓN TIEMPO */}
-        {selectedRequest && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-            <div className="w-full max-w-sm rounded-3xl bg-[#1a1a1a] border border-zinc-800 p-6 shadow-2xl space-y-4">
-              <h3 className="text-lg font-bold text-white">¿Cuánto tiempo estimás?</h3>
-              <p className="text-xs text-zinc-400">Ingresá una estimación rápida para avisarle al cliente.</p>
+      {/* MODAL: ACEPTAR Y ESTIMAR TIEMPO */}
+      {selectedRequest && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-[28px] bg-[#131318] border border-white/14 p-6 space-y-6 text-[#F4F3F7] shadow-2xl">
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-[#F4F3F7]">Confirmar trabajo</h3>
+              <p className="text-xs text-zinc-400">
+                Cliente: <strong className="text-[#F4F3F7]">{selectedRequest.client_name}</strong>
+              </p>
+            </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: "30 min", value: 30 },
-                  { label: "1 hora", value: 60 },
-                  { label: "2 horas", value: 120 },
-                  { label: "Más de 2h", value: 180 },
-                ].map((opt) => (
+            <div className="space-y-3">
+              <label className="block text-[10.5px] font-mono tracking-wider uppercase text-zinc-400 font-semibold">
+                ¿En cuánto tiempo aproximado calculás llegar / terminar?
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[15, 30, 45, 60, 90, 120].map((mins) => (
                   <button
-                    key={opt.value}
+                    key={mins}
                     type="button"
-                    onClick={() => setEstimatedDuration(opt.value)}
-                    className={`flex h-[48px] items-center justify-center rounded-xl border text-xs font-bold transition ${
-                      estimatedDuration === opt.value
-                        ? "border-[#4F46E5] bg-[#1e1b4b] text-indigo-300"
-                        : "border-zinc-800 bg-[#0f0f0f] text-zinc-400"
+                    onClick={() => setEstimatedDuration(mins)}
+                    className={`py-3 rounded-[16px] text-xs font-bold border transition cursor-pointer ${
+                      estimatedDuration === mins
+                        ? "bg-[#7C5CFF] border-[#8B6BFF] text-white shadow-md"
+                        : "bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10"
                     }`}
                   >
-                    {opt.label}
+                    {mins} min
                   </button>
                 ))}
               </div>
+            </div>
 
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedRequest(null)}
-                  className="flex-1 h-[48px] rounded-xl border border-zinc-800 bg-[#0f0f0f] text-xs font-bold text-zinc-400"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmWork}
-                  disabled={isConfirming}
-                  className="flex-1 h-[48px] rounded-xl bg-[#4F46E5] text-xs font-bold text-white hover:bg-indigo-600 transition"
-                >
-                  Confirmar
-                </button>
-              </div>
+            <div className="space-y-2">
+              <label className="block text-[10.5px] font-mono tracking-wider uppercase text-zinc-400 font-semibold">
+                Fecha y Hora programada (Opcional)
+              </label>
+              <input
+                type="datetime-local"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                className="w-full rounded-[16px] border border-white/12 bg-[#08080A] p-3 text-xs text-[#F4F3F7] focus:outline-none focus:border-[#7C5CFF]"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedRequest(null)}
+                className="flex-1 h-[52px] rounded-[16px] border border-white/12 bg-transparent text-sm font-bold text-zinc-400 hover:bg-white/5 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmWork}
+                disabled={isConfirming}
+                className="flex-1 h-[52px] rounded-[16px] bg-[#7C5CFF] text-sm font-bold text-white hover:bg-[#6b47ff] transition shadow-md disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isConfirming ? <Loader2 className="size-4 animate-spin" /> : "Aceptar y Notificar"}
+              </button>
             </div>
           </div>
-        )}
-
-        {/* MODAL PROFESIONAL NO PUEDO CONTINUAR */}
-        {showProviderCancelModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-            <div className="w-full max-w-sm rounded-3xl bg-[#1a1a1a] border border-zinc-800 p-6 shadow-2xl space-y-4">
-              <h3 className="text-lg font-bold text-white">¿Por qué no podés continuar?</h3>
-              <p className="text-xs text-zinc-400">Seleccioná un motivo para cancelar el trabajo actual.</p>
-
-              <div className="space-y-2">
-                {["Emergencia personal", "No puedo llegar", "Otro"].map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => setCancelReason(opt)}
-                    className={`flex h-[48px] w-full items-center justify-between px-4 rounded-xl border text-xs font-bold transition ${
-                      cancelReason === opt
-                        ? "border-red-600 bg-red-950/40 text-red-300"
-                        : "border-zinc-800 bg-[#0f0f0f] text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    <span>{opt}</span>
-                    {cancelReason === opt && <span className="size-2 rounded-full bg-red-500" />}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowProviderCancelModal(false)}
-                  className="flex-1 h-[48px] rounded-xl border border-zinc-800 bg-[#0f0f0f] text-xs font-bold text-zinc-400"
-                >
-                  Volver
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmProviderCancel}
-                  disabled={isCancellingWork}
-                  className="flex-1 h-[48px] rounded-xl bg-red-600 text-xs font-bold text-white hover:bg-red-700 transition"
-                >
-                  Confirmar cancelación
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* NAV DEL PROFESIONAL (Fijo abajo) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 h-[64px] w-full bg-[#1a1a1a] border-t border-zinc-800">
-        <div className="mx-auto flex h-full max-w-md items-center justify-around px-4">
-          <button
-            type="button"
-            onClick={() => setActiveTab("jobs")}
-            className={`flex flex-col items-center justify-center space-y-1 transition ${
-              activeTab === "jobs" ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            <ClipboardList className="size-5" />
-            <span className="text-[10px] font-bold">Mis trabajos</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("agenda")}
-            className={`flex flex-col items-center justify-center space-y-1 transition ${
-              activeTab === "agenda" ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            <CalendarIcon className="size-5" />
-            <span className="text-[10px] font-bold">Agenda</span>
-          </button>
-
-          <Link
-            href="/provider/profile"
-            className="flex flex-col items-center justify-center space-y-1 text-zinc-500 hover:text-zinc-300 transition"
-          >
-            <User className="size-5" />
-            <span className="text-[10px] font-bold">Perfil</span>
-          </Link>
         </div>
-      </nav>
+      )}
+
+      {/* MODAL: PROVEEDOR CANCELAR TRABAJO */}
+      {showProviderCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-[28px] bg-[#131318] border border-white/14 p-6 space-y-5 text-[#F4F3F7] shadow-2xl">
+            <div className="space-y-1 text-center">
+              <h3 className="text-base font-bold text-[#F4F3F7]">¿No podés realizar el trabajo?</h3>
+              <p className="text-xs text-zinc-400">
+                Se notificará al cliente y se reabrirá la solicitud para otros profesionales.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-[10.5px] font-mono tracking-wider uppercase text-zinc-400 font-semibold">Motivo de cancelación</label>
+              <select
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full rounded-[16px] border border-white/12 bg-[#08080A] p-3.5 text-xs text-[#F4F3F7] focus:outline-none focus:border-[#FF5A5A]"
+              >
+                <option value="Emergencia personal">Emergencia personal</option>
+                <option value="Problemas de transporte">Problemas de transporte</option>
+                <option value="Demora en trabajo previo">Demora en trabajo previo</option>
+                <option value="Otro motivo">Otro motivo</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProviderCancelModal(false);
+                  setSelectedCancelWorkId(null);
+                }}
+                className="flex-1 h-[48px] rounded-[14px] border border-white/12 text-xs font-bold text-zinc-300 hover:bg-white/5 transition"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmProviderCancel}
+                disabled={isCancellingWork}
+                className="flex-1 h-[48px] rounded-[14px] bg-[#FF5A5A] text-xs font-bold text-white hover:bg-red-600 transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {isCancellingWork ? <Loader2 className="size-4 animate-spin" /> : "Confirmar cancelación"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

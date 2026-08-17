@@ -38,6 +38,8 @@ const categoryIcons: Record<string, LucideIcon> = {
 
 export interface ActiveRequestItem {
   uuid: string;
+  work_id?: string | null;
+  conversation_id?: string | null;
   raw_prompt: string;
   status: string;
   category?: {
@@ -82,6 +84,8 @@ export function DashboardScreen({
     subtitle = "El trabajo está en curso";
   } else if (status === "pending_completion") {
     subtitle = "El trabajo terminó. ¿Todo bien?";
+  } else if (status === "cancelled") {
+    subtitle = "Solicitud cancelada";
   }
 
   // Card Main Title (20px semibold)
@@ -92,6 +96,8 @@ export function DashboardScreen({
     cardTitle = `${providerName} está trabajando en tu solicitud.`;
   } else if (status === "pending_completion") {
     cardTitle = `${providerName} marcó el trabajo como terminado.`;
+  } else if (status === "cancelled") {
+    cardTitle = `El trabajo fue cancelado`;
   }
 
   // Subtext (14px)
@@ -104,18 +110,23 @@ export function DashboardScreen({
   } else if (status === "pending_completion") {
     cardSubtext =
       "Si todo salió bien, confirmá para cerrar. Si hay algún problema, avisanos.";
+  } else if (status === "cancelled") {
+    cardSubtext =
+      "Lamentablemente el profesional no pudo continuar con el trabajo. Podés realizar una nueva búsqueda para encontrar otro profesional.";
   }
+
+  const targetWorkId = activeRequest.work_id || activeRequest.uuid;
 
   const handleCompleteWork = async () => {
     setIsSubmitting(true);
     try {
-      await apiFetch(ENDPOINTS.WORK_COMPLETE(activeRequest.uuid), {
+      await apiFetch(ENDPOINTS.WORK_COMPLETE(targetWorkId), {
         method: "POST",
       });
-      router.push(`/rate/${activeRequest.uuid}`);
+      router.push(`/rate/${targetWorkId}`);
     } catch {
       // Navigate anyway
-      router.push(`/rate/${activeRequest.uuid}`);
+      router.push(`/rate/${targetWorkId}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -173,7 +184,9 @@ export function DashboardScreen({
 
       {/* CARD SOLICITUD ACTIVA */}
       <div
-        className="mt-6 rounded-[20px] border-l-4 border-l-[#4F46E5] border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/90 p-5 shadow-sm space-y-4"
+        className={`mt-6 rounded-[20px] border-l-4 ${
+          status === "cancelled" ? "border-l-red-500" : "border-l-[#4F46E5]"
+        } border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/90 p-5 shadow-sm space-y-4`}
         style={{ borderRadius: "16px" }}
       >
         {/* 1. Badge de categoría con ícono arriba izquierda */}
@@ -246,6 +259,19 @@ export function DashboardScreen({
               className="flex h-[56px] w-full items-center justify-center rounded-2xl bg-[#4F46E5] px-4 text-base font-semibold text-white transition hover:bg-indigo-700 shadow-sm"
             >
               Contactar a {providerName}
+            </button>
+          ) : status === "cancelled" ? (
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.removeItem("service_request_id");
+                sessionStorage.removeItem("match_session_id");
+                if (onRefresh) onRefresh();
+                router.push("/");
+              }}
+              className="flex h-[56px] w-full items-center justify-center rounded-2xl bg-[#4F46E5] px-4 text-base font-semibold text-white transition hover:bg-indigo-700 shadow-sm"
+            >
+              Buscar otro profesional
             </button>
           ) : (
             <button

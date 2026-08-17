@@ -6,7 +6,6 @@ import { MapPin, Navigation } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 
-// Custom prominent pin icon for Leaflet
 const customIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -31,7 +30,6 @@ function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
   return null;
 }
 
-// Map Click Listener to pin anywhere on map click
 function MapEvents({ onSelectCoords }: { onSelectCoords: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
@@ -44,7 +42,7 @@ function MapEvents({ onSelectCoords }: { onSelectCoords: (lat: number, lng: numb
 export default function MapPickerContainer({
   initialLat = -27.4692,
   initialLng = -58.8306,
-  initialAddress = "Córdoba 456, Corrientes",
+  initialAddress = "Thames 1842, Palermo",
   onLocationChange,
 }: MapPickerContainerProps) {
   const [lat, setLat] = useState(initialLat);
@@ -122,13 +120,13 @@ export default function MapPickerContainer({
   };
 
   return (
-    <div className="space-y-3 w-full">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 w-full">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+          <h3 className="text-[20px] font-bold text-[#F4F3F7]">
             ¿Dónde necesitás el servicio?
           </h3>
-          <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+          <p className="text-xs text-[#A78BFA] font-medium mt-0.5">
             Tocá cualquier lugar del mapa o arrastrá el pin para marcar tu casa
           </p>
         </div>
@@ -136,15 +134,15 @@ export default function MapPickerContainer({
           type="button"
           onClick={handleUseCurrentLocation}
           disabled={isLocating}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-xs font-semibold text-[#4F46E5] dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900 shadow-sm"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-b from-white/12 to-white/[0.045] backdrop-blur-md border border-white/15 text-xs font-semibold text-[#F4F3F7] shadow-sm shrink-0 hover:bg-white/20 transition cursor-pointer"
         >
-          <Navigation className={`size-3.5 ${isLocating ? "animate-spin" : ""}`} />
+          <Navigation className={`size-3.5 text-[#A8FF35] ${isLocating ? "animate-spin" : ""}`} />
           <span>{isLocating ? "Ubicando..." : "Mi ubicación"}</span>
         </button>
       </div>
 
-      {/* Container Leaflet */}
-      <div className="relative h-72 w-full overflow-hidden rounded-3xl border-2 border-indigo-200 dark:border-zinc-700 shadow-md">
+      {/* Leaflet Map */}
+      <div className="relative h-72 w-full overflow-hidden rounded-[24px] border border-white/12 shadow-2xl">
         <MapContainer
           center={[lat, lng]}
           zoom={15}
@@ -166,28 +164,28 @@ export default function MapPickerContainer({
           <RecenterMap lat={lat} lng={lng} />
         </MapContainer>
 
-        {/* Floating helper overlay tag */}
-        <div className="absolute top-3 left-3 z-[400] rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 shadow-md border border-zinc-200/60 dark:border-zinc-700/60 flex items-center gap-1.5">
-          <MapPin className="size-3.5 text-[#4F46E5]" />
+        {/* Map Helper Chip */}
+        <div className="absolute top-3 left-3 z-[400] rounded-xl bg-[#08080A]/85 backdrop-blur-md px-3 py-1.5 text-[11px] font-semibold text-[#F4F3F7] shadow-md border border-white/12 flex items-center gap-1.5">
+          <MapPin className="size-3.5 text-[#8B6BFF]" />
           <span>Tocá en el mapa o arrastrá el pin</span>
         </div>
       </div>
 
-      {/* Address Input Field */}
-      <div className="space-y-1">
-        <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+      {/* Address Field */}
+      <div className="space-y-1.5">
+        <label className="block text-[10.5px] font-mono tracking-wider uppercase text-zinc-400 font-semibold">
           Dirección seleccionada
         </label>
-        <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-3 shadow-sm">
-          <MapPin className="size-4 text-[#4F46E5] shrink-0" />
+        <div className="flex items-center gap-2.5 rounded-[18px] border border-white/10 bg-white/5 p-3.5 shadow-sm">
+          <MapPin className="size-4 text-[#8B6BFF] shrink-0" />
           <input
             type="text"
             value={address}
             onChange={(e) => handleAddressInputChange(e.target.value)}
-            placeholder="Ej: Córdoba 456, Corrientes"
-            className="w-full bg-transparent text-sm font-medium text-zinc-900 dark:text-zinc-100 outline-none placeholder-zinc-400"
+            placeholder="Ej: Thames 1842, Palermo"
+            className="w-full bg-transparent text-sm font-semibold text-[#F4F3F7] outline-none placeholder-zinc-500"
           />
-          {isGeocoding && <span className="text-[10px] text-zinc-400 animate-pulse">Obteniendo dirección...</span>}
+          {isGeocoding && <span className="text-[10px] text-zinc-400 animate-pulse shrink-0">Obteniendo dirección...</span>}
         </div>
       </div>
     </div>

@@ -1,19 +1,17 @@
 "use client";
 
-import { Zap, Sun, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Urgency } from "@/lib/types";
 
 interface UrgencyChipOption {
   value: Urgency;
   label: string;
-  icon: typeof Zap;
 }
 
 const URGENCY_CHIPS: UrgencyChipOption[] = [
-  { value: "immediate", label: "Ahora mismo", icon: Zap },
-  { value: "today", label: "Hoy", icon: Sun },
-  { value: "scheduled", label: "Lo planifico", icon: Calendar },
+  { value: "immediate", label: "Ahora mismo" },
+  { value: "today", label: "Hoy" },
+  { value: "scheduled", label: "Lo planifico" },
 ];
 
 interface UrgencyChipsProps {
@@ -24,9 +22,8 @@ interface UrgencyChipsProps {
 
 export function UrgencyChips({ value, onChange, className }: UrgencyChipsProps) {
   return (
-    <div className={cn("flex items-center justify-center gap-2 flex-wrap", className)}>
+    <div className={cn("flex gap-1.5 p-1.5 rounded-[16px] bg-white/5 border border-white/9 w-full", className)}>
       {URGENCY_CHIPS.map((chip) => {
-        const Icon = chip.icon;
         const isActive = value === chip.value;
 
         return (
@@ -35,14 +32,13 @@ export function UrgencyChips({ value, onChange, className }: UrgencyChipsProps) 
             type="button"
             onClick={() => onChange(chip.value)}
             className={cn(
-              "flex items-center gap-1.5 h-10 px-4 rounded-full text-xs font-semibold border transition-all shadow-sm",
+              "flex-1 h-[44px] rounded-[12px] flex items-center justify-center text-[13.5px] font-semibold transition-all duration-200 cursor-pointer",
               isActive
-                ? "border-[#4F46E5] bg-[#EEF2FF] text-[#4F46E5] dark:bg-indigo-950/80 dark:text-indigo-300 dark:border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900"
-                : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600"
+                ? "bg-gradient-to-b from-white/14 to-white/6 border border-white/16 shadow-[inset_0_1px_0_rgba(255,255,255,0.24)] text-[#F4F3F7]"
+                : "text-zinc-400 hover:text-white"
             )}
           >
-            <Icon className={cn("size-3.5", isActive ? "text-[#4F46E5] dark:text-indigo-300" : "text-zinc-400")} />
-            <span>{chip.label}</span>
+            {chip.label}
           </button>
         );
       })}

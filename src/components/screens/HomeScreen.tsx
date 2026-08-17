@@ -68,37 +68,40 @@ export function HomeScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 flex flex-col">
+    <div className="min-h-screen bg-[#08080A] text-[#F4F3F7] flex flex-col relative overflow-hidden">
+      {/* Background Radial Glow */}
+      <div className="absolute -top-32 -left-20 size-[420px] rounded-full bg-[radial-gradient(circle,rgba(124,92,255,0.30)_0%,transparent_66%)] blur-2xl pointer-events-none animate-[drift_9s_ease-in-out_infinite]" />
+
       {/* VIEWPORT 1: HOME MINIMALISTA PROMPT CENTERED */}
-      <div className="min-h-screen flex flex-col justify-between px-4 py-6 max-w-md mx-auto w-full">
-        {/* Top Bar: Logo Lizto (z en Indigo) + Campana */}
-        <header className="flex items-center justify-between w-full pt-1 pb-2">
+      <div className="min-h-screen flex flex-col justify-between px-4 py-6 max-w-md mx-auto w-full relative z-10">
+        {/* Top Bar: Logo Lizto (z en Indigo) */}
+        <header className="flex items-center justify-between w-full pt-2 pb-2">
           <div className="flex items-center">
-            <span className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
-              Li<span className="text-[#4F46E5]">z</span>to
+            <span className="text-2xl font-extrabold tracking-tight text-[#F4F3F7]">
+              Li<span className="text-[#8B6BFF]">z</span>to
             </span>
           </div>
           <button
             type="button"
             aria-label="Notificaciones"
-            className="flex size-10 items-center justify-center rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 shadow-sm"
+            className="flex size-10 items-center justify-center rounded-2xl border border-white/12 bg-white/4 text-zinc-300 shadow-sm hover:bg-white/10 transition"
           >
             <Bell className="size-4" />
           </button>
         </header>
 
         {/* CENTRO DE PANTALLA: PROMPT BÚSQUEDA */}
-        <main className="my-auto py-8 flex flex-col items-center text-center w-full space-y-6">
-          <div className="space-y-1">
-            <p className="text-[13px] font-medium text-zinc-400 dark:text-zinc-500">
+        <main className="my-auto py-4 flex flex-col items-start w-full space-y-6">
+          <div className="space-y-2 text-left">
+            <p className="text-sm font-medium text-zinc-400">
               Hola, {firstName}
             </p>
-            <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+            <h1 className="text-[34px] leading-[1.1] font-extrabold tracking-tight text-[#F4F3F7] max-w-[11ch]">
               ¿Qué necesitás resolver?
             </h1>
           </div>
 
-          {/* Search box with rounded-[20px] */}
+          {/* Search box glass container */}
           <div className="w-full">
             <SearchBox
               ref={textareaRef}
@@ -109,41 +112,41 @@ export function HomeScreen() {
             />
           </div>
 
-          {/* 3 chips de urgencia centrados debajo del textarea */}
-          <UrgencyChips value={urgency} onChange={setUrgency} className="pt-2" />
+          {/* Segmented timing picker */}
+          <UrgencyChips value={urgency} onChange={setUrgency} className="w-full" />
 
           {error && (
-            <div className="w-full rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+            <div className="w-full rounded-2xl border border-red-900/80 bg-red-950/40 px-4 py-3 text-sm text-red-400">
               {error}
             </div>
           )}
         </main>
 
-        {/* Texto sutil abajo del centro */}
+        {/* Scroll hint to categories */}
         <div className="pb-6 text-center">
           <button
             type="button"
             onClick={() => {
               window.scrollTo({ top: window.innerHeight * 0.8, behavior: "smooth" });
             }}
-            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition"
+            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-zinc-500 hover:text-zinc-300 transition"
           >
-            <span>o elegí una categoría</span>
+            <span>o explorá por rubro</span>
             <ChevronDown className="size-3.5 animate-bounce" />
           </button>
         </div>
       </div>
 
-      {/* VIEWPORT 2: CATEGORÍAS (Al deslizar hacia abajo, fuera del viewport inicial) */}
-      <section className="min-h-screen bg-zinc-100/60 dark:bg-zinc-950/40 border-t border-zinc-200/80 dark:border-zinc-800 px-4 py-12">
+      {/* VIEWPORT 2: CATEGORÍAS (Explorá por rubro) */}
+      <section className="min-h-screen bg-[#0C0C10] border-t border-white/8 px-4 py-12 relative z-10">
         <div className="max-w-md mx-auto w-full space-y-6">
-          <div className="text-center space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-              Categorías de servicio
-            </p>
-            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+          <div className="space-y-1">
+            <h2 className="text-[28px] leading-tight font-extrabold text-[#F4F3F7]">
               Explorá profesionales por rubro
             </h2>
+            <p className="text-sm text-zinc-400">
+              O contale a Lizto qué necesitás y lo resolvemos por vos.
+            </p>
           </div>
 
           {isLoading ? (
@@ -152,7 +155,7 @@ export function HomeScreen() {
             <CategoryGrid categories={categories} onSelectCategory={handleSelectCategory} />
           )}
 
-          <p className="pt-8 text-center text-xs text-zinc-400 dark:text-zinc-500">
+          <p className="pt-8 text-center text-xs text-zinc-500 font-mono">
             Profesionales verificados · Buscar no tiene costo
           </p>
         </div>

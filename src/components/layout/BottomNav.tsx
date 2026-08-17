@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, User } from "lucide-react";
+import { Grid2x2, Home, ListOrdered, User } from "lucide-react";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -14,9 +14,14 @@ export function BottomNav() {
       icon: Home,
     },
     {
-      label: "Buscar",
-      href: "/search",
-      icon: Search,
+      label: "Rubros",
+      href: "/categories",
+      icon: Grid2x2,
+    },
+    {
+      label: "Pedidos",
+      href: "/my-requests",
+      icon: ListOrdered,
     },
     {
       label: "Perfil",
@@ -26,33 +31,33 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 h-[64px] w-full bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800">
-      <div className="mx-auto flex h-full max-w-md items-center justify-around px-4">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+    <nav className="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto h-[64px] rounded-[22px] flex items-center justify-around bg-[#131318]/90 dark:bg-white/10 backdrop-blur-xl border border-white/15 shadow-2xl">
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const isActive =
+          item.href === "/"
+            ? pathname === "/"
+            : pathname.startsWith(item.href);
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center justify-center space-y-1 transition-colors ${
-                isActive
-                  ? "text-[#4F46E5]"
-                  : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
-              }`}
-            >
-              <Icon className="size-5" />
-              <span className="text-[11px] font-medium leading-none">
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex flex-col items-center justify-center gap-1.5 transition-colors ${
+              isActive
+                ? "text-indigo-400"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <div className={`flex size-4 items-center justify-center rounded-md ${isActive ? "bg-[#8B6BFF] shadow-[0_0_14px_rgba(124,92,255,0.7)] text-white" : ""}`}>
+              <Icon className="size-3.5" />
+            </div>
+            <span className={`text-[10.5px] font-semibold leading-none ${isActive ? "text-white font-bold" : "text-zinc-400"}`}>
+              {item.label}
+            </span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

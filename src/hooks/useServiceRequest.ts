@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
+import { authStorage } from "@/lib/auth";
 import { ENDPOINTS } from "@/lib/endpoints";
 import { mapBackendProviderToFrontend } from "@/hooks/useProviders";
 import type { ParsedRequest, Provider } from "@/lib/types";
@@ -99,16 +100,49 @@ export function useServiceRequest() {
   const [error, setError] = useState<string | null>(null);
 
   const createRequest = useCallback(async (parsedIntent: ParsedRequest) => {
-    const existingId = sessionStorage.getItem("service_request_id");
-    if (existingId) {
-      setRequestId(existingId);
-      return { id: existingId, status: "pending_survey", suggested_questions: [] };
-    }
-
     setIsLoading(true);
     setError(null);
 
     try {
+      // Auto guest auth if user has no token
+      let token = authStorage.getToken();
+      if (!token) {
+        try {
+          const guestEmail = `cliente_${Date.now()}_${Math.floor(Math.random() * 10000)}@test.com`;
+          const guestPassword = "password123";
+          const regRes = await apiFetch<{ data: { user: any; token: string } }>(ENDPOINTS.REGISTER, {
+            method: "POST",
+            body: JSON.stringify({
+              name: "Cliente",
+              email: guestEmail,
+              password: guestPassword,
+              password_confirmation: guestPassword,
+              role: "client",
+            }),
+          });
+          if (regRes?.data?.token) {
+            authStorage.setToken(regRes.data.token);
+            authStorage.setUser(regRes.data.user);
+          }
+        } catch {
+          try {
+            const loginRes = await apiFetch<{ data: { user: any; token: string } }>(ENDPOINTS.LOGIN, {
+              method: "POST",
+              body: JSON.stringify({
+                email: "juan@test.com",
+                password: "password",
+              }),
+            });
+            if (loginRes?.data?.token) {
+              authStorage.setToken(loginRes.data.token);
+              authStorage.setUser(loginRes.data.user);
+            }
+          } catch (e) {
+            console.warn("Auto guest auth failed:", e);
+          }
+        }
+      }
+
       const storedAddress = typeof window !== "undefined" ? sessionStorage.getItem("location_address") : null;
       const storedLat = typeof window !== "undefined" ? sessionStorage.getItem("location_lat") : null;
       const storedLng = typeof window !== "undefined" ? sessionStorage.getItem("location_lng") : null;

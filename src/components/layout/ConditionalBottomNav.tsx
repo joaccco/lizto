@@ -5,7 +5,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 
 export function ConditionalBottomNav() {
   const pathname = usePathname();
-  const hideOnPaths = ["/login", "/register", "/survey", "/work-confirmed", "/my-requests"];
+  const hideOnPaths = ["/login", "/register", "/survey", "/work-confirmed", "/provider"];
 
   if (hideOnPaths.includes(pathname)) {
     return null;

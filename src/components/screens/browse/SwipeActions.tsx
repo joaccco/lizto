@@ -1,7 +1,6 @@
 "use client";
 
-import { Check, RotateCcw, X } from "lucide-react";
-
+import { ArrowRight, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SwipeActionsProps {
@@ -10,6 +9,7 @@ interface SwipeActionsProps {
   onUndo: () => void;
   canUndo: boolean;
   disabled?: boolean;
+  providerFirstName?: string;
   className?: string;
 }
 
@@ -19,48 +19,40 @@ export function SwipeActions({
   onUndo,
   canUndo,
   disabled = false,
+  providerFirstName = "profesional",
   className,
 }: SwipeActionsProps) {
   return (
-    <div className={cn("grid grid-cols-3 items-start gap-4 px-4", className)}>
-      <div className="flex flex-col items-center gap-1.5">
-        <button
-          type="button"
-          onClick={onReject}
-          disabled={disabled}
-          className="flex size-13 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-50 disabled:opacity-40"
-          aria-label="Descartar profesional"
-        >
-          <X className="size-5" />
-        </button>
-        <span className="text-[10px] font-medium text-zinc-400">Pasar</span>
-      </div>
+    <div className={cn("flex items-center gap-3 w-full pt-2", className)}>
+      <button
+        type="button"
+        onClick={onReject}
+        disabled={disabled}
+        className="size-[56px] rounded-[18px] flex items-center justify-center bg-gradient-to-b from-white/10 to-white/[0.035] backdrop-blur-xl border border-white/13 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] text-zinc-300 hover:text-white hover:bg-white/15 transition cursor-pointer disabled:opacity-40 shrink-0"
+        aria-label="Pasar"
+      >
+        <X className="size-5" />
+      </button>
 
-      <div className="flex flex-col items-center gap-1.5">
-        <button
-          type="button"
-          onClick={onUndo}
-          disabled={!canUndo || disabled}
-          className="flex size-11 items-center justify-center rounded-full border border-zinc-200 bg-transparent text-zinc-500 transition hover:bg-white disabled:opacity-30"
-          aria-label="Recuperar profesional anterior"
-        >
-          <RotateCcw className="size-4" />
-        </button>
-        <span className="text-[10px] font-medium text-zinc-400">Volver</span>
-      </div>
+      <button
+        type="button"
+        onClick={onUndo}
+        disabled={!canUndo || disabled}
+        className="size-[56px] rounded-[18px] flex items-center justify-center bg-gradient-to-b from-white/10 to-white/[0.035] backdrop-blur-xl border border-white/13 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] text-zinc-300 hover:text-white hover:bg-white/15 transition cursor-pointer disabled:opacity-30 shrink-0"
+        aria-label="Volver"
+      >
+        <RotateCcw className="size-4" />
+      </button>
 
-      <div className="flex flex-col items-center gap-1.5">
-        <button
-          type="button"
-          onClick={onAccept}
-          disabled={disabled}
-          className="flex size-13 items-center justify-center rounded-full bg-[#4F46E5] text-white transition hover:bg-indigo-700 disabled:opacity-40"
-          aria-label="Elegir profesional"
-        >
-          <Check className="size-5" />
-        </button>
-        <span className="text-[10px] font-semibold text-[#4F46E5]">Elegir</span>
-      </div>
+      <button
+        type="button"
+        onClick={onAccept}
+        disabled={disabled}
+        className="flex-1 h-[56px] rounded-[18px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-white font-bold text-base flex items-center justify-center gap-2 transition shadow-[0_14px_38px_rgba(124,92,255,0.45)] cursor-pointer disabled:opacity-40"
+      >
+        <span>Elegir a {providerFirstName}</span>
+        <ArrowRight className="size-4" />
+      </button>
     </div>
   );
 }

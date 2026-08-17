@@ -17,7 +17,6 @@ export default function HomePage() {
   const [isChecking, setIsChecking] = useState(true);
 
   const checkActiveRequest = async () => {
-    // FIX 3: Do not check active request if user has no token
     const token = authStorage.getToken();
     if (!token) {
       setActiveRequest(null);
@@ -25,10 +24,9 @@ export default function HomePage() {
       return;
     }
 
-    setIsChecking(true);
     try {
       const res = await apiFetch<{ data: ActiveRequestItem[] }>(
-        `${ENDPOINTS.REQUESTS}?status=active&limit=1`,
+        `${ENDPOINTS.REQUESTS}?limit=1`,
         { headers: { "Cache-Control": "no-store" } }
       );
       if (res.data && res.data.length > 0) {
@@ -39,6 +37,7 @@ export default function HomePage() {
           "confirmed",
           "in_progress",
           "pending_completion",
+          "cancelled",
         ];
         if (validStatuses.includes(first.status)) {
           setActiveRequest(first);
@@ -49,7 +48,6 @@ export default function HomePage() {
         setActiveRequest(null);
       }
     } catch {
-      // FIX 2: Gracefully catch 401 or network errors without redirecting or throwing
       setActiveRequest(null);
     } finally {
       setIsChecking(false);
@@ -58,6 +56,11 @@ export default function HomePage() {
 
   useEffect(() => {
     checkActiveRequest();
+    const interval = setInterval(() => {
+      checkActiveRequest();
+    }, 4000);
+
+    return () => clearInterval(interval);
   }, []);
 
   if (isChecking) {

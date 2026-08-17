@@ -7,11 +7,15 @@ export const ENDPOINTS = {
 
   // Service Requests
   REQUESTS: "/requests",
+  REQUEST_DETAIL: (id: string) => `/requests/${id}`,
   REQUEST_PARSE: "/requests/parse",
   REQUEST_SURVEY: (id: string) => `/requests/${id}/survey`,
   REQUEST_MATCH: (id: string) => `/requests/${id}/match`,
   REQUEST_CANCEL: (id: string) => `/requests/${id}/cancel`,
   REQUESTS_CLEANUP: "/requests/cleanup",
+
+  // Conversations & Messages
+  CONVERSATION_MESSAGES: (id: string) => `/conversations/${id}/messages`,
 
   // Matching
   MATCH_SESSION: (id: string) => `/match-sessions/${id}`,
@@ -31,6 +35,7 @@ export const ENDPOINTS = {
   // Provider Profile & Dashboard
   PROVIDER_PROFILE: "/provider/profile",
   PROVIDER_AVAILABILITY: "/provider/availability",
+  PROVIDER_AGENDA: "/provider/agenda",
 
   // Works
   WORKS: "/works",
