@@ -17,7 +17,7 @@ export interface Question {
   id?: number | string;
   key: string;
   text: string;
-  input_type: "single_select" | "multi_select" | "text" | "boolean" | "photo";
+  input_type: "single_select" | "multi_select" | "text" | "boolean" | "photo" | "timing_selector";
   options: QuestionOption[] | null;
   is_required: boolean;
 }

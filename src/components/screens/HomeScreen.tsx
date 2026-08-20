@@ -112,9 +112,6 @@ export function HomeScreen() {
             />
           </div>
 
-          {/* Segmented timing picker */}
-          <UrgencyChips value={urgency} onChange={setUrgency} className="w-full" />
-
           {error && (
             <div className="w-full rounded-2xl border border-red-900/80 bg-red-950/40 px-4 py-3 text-sm text-red-400">
               {error}
