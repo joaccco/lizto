@@ -285,15 +285,30 @@ export default function RequestDetailPage() {
               <ShieldCheck className="size-5 text-[#8B6BFF] shrink-0" />
             </div>
 
-            {/* BOTÓN DE CHAT DIRECTO CON EL PROFESIONAL */}
-            <button
-              type="button"
-              onClick={() => router.push(`/conversations/${conversationId}`)}
-              className="flex h-[52px] w-full items-center justify-center gap-2 rounded.xl rounded-[16px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-sm font-bold text-white shadow-[0_12px_32px_rgba(124,92,255,0.4)] transition cursor-pointer"
-            >
-              <MessageSquare className="size-4" />
-              <span>Abrir Chat con {providerName}</span>
-            </button>
+            {/* BOTÓN DE CHAT O BOTÓN DE CALIFICAR SI ESTÁ COMPLETADO */}
+            {requestDetail.status === "completed" ? (
+              <button
+                type="button"
+                onClick={() => router.push(`/rate/${requestDetail.accepted_provider?.uuid || requestDetail.id}`)}
+                className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#F2B441] hover:bg-[#e0a230] text-sm font-extrabold text-zinc-950 shadow-[0_12px_32px_rgba(242,180,65,0.4)] transition cursor-pointer"
+              >
+                <Star className="size-5 fill-zinc-950 text-zinc-950" />
+                <span>★ Calificar servicio de {providerName}</span>
+              </button>
+            ) : requestDetail.status !== "cancelled" ? (
+              <button
+                type="button"
+                onClick={() => router.push(`/conversations/${conversationId}`)}
+                className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-sm font-bold text-white shadow-[0_12px_32px_rgba(124,92,255,0.4)] transition cursor-pointer"
+              >
+                <MessageSquare className="size-4" />
+                <span>Abrir Chat con {providerName}</span>
+              </button>
+            ) : (
+              <div className="flex h-[44px] w-full items-center justify-center gap-2 rounded-[14px] bg-white/4 border border-white/8 text-xs font-semibold text-zinc-400 font-mono">
+                <span>Chat finalizado (Trabajo cancelado)</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -432,19 +447,21 @@ export default function RequestDetailPage() {
             </div>
 
             {/* CTA in Modal */}
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowProviderModal(false);
-                  router.push(`/conversations/${conversationId}`);
-                }}
-                className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-sm font-bold text-white shadow-lg transition cursor-pointer"
-              >
-                <MessageSquare className="size-4" />
-                <span>Enviar mensaje a {provider.name.split(" ")[0]}</span>
-              </button>
-            </div>
+            {requestDetail.status !== "completed" && requestDetail.status !== "cancelled" && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProviderModal(false);
+                    router.push(`/conversations/${conversationId}`);
+                  }}
+                  className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-sm font-bold text-white shadow-lg transition cursor-pointer"
+                >
+                  <MessageSquare className="size-4" />
+                  <span>Enviar mensaje a {provider.name.split(" ")[0]}</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

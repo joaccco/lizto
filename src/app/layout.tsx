@@ -27,7 +27,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col font-sans bg-[#08080A] text-[#F4F3F7]">
+      <body className="min-h-full flex flex-col font-sans bg-[#08080A] text-[#F4F3F7]" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <ToastProvider>
             <AuthProvider>

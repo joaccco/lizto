@@ -16,6 +16,7 @@ import { SwipeActions } from "@/components/screens/browse/SwipeActions";
 import { RecommendScreen } from "@/components/screens/RecommendScreen";
 import { ScreenShell } from "@/components/screens/shared/ScreenShell";
 import { TopBar } from "@/components/screens/shared/TopBar";
+import { WorkerProfileModal } from "@/components/modals/WorkerProfileModal";
 import { useCardStack } from "@/hooks/useCardStack";
 import { useProviders } from "@/hooks/useProviders";
 
@@ -43,6 +44,7 @@ export function BrowseScreen() {
   const [sessionCards, setSessionCards] = useState<StoredCard[] | null>(null);
   const [showAllOptions, setShowAllOptions] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [activeModalProvider, setActiveModalProvider] = useState<Provider | null>(null);
 
   useEffect(() => {
     try {
@@ -117,16 +119,18 @@ export function BrowseScreen() {
   );
 
   const handleAccept = async () => {
-    if (!current) return;
+    const targetProvider = activeModalProvider || current;
+    if (!targetProvider) return;
 
-    const targetCardId = (current as any)?.card_id || (current as any)?.match_card_id;
+    const targetCardId = (targetProvider as any)?.card_id || (targetProvider as any)?.match_card_id;
 
     if (matchSessionId && targetCardId) {
       await acceptCard(targetCardId);
     }
 
-    sessionStorage.setItem("accepted_provider", JSON.stringify(current));
+    sessionStorage.setItem("accepted_provider", JSON.stringify(targetProvider));
     advanceAccept();
+    setActiveModalProvider(null);
     router.push("/work-confirmed");
   };
 
@@ -152,16 +156,26 @@ export function BrowseScreen() {
     advanceUndo();
   };
 
-  // CAMBIO 3: If urgency is immediate, show RecommendScreen first
   const isImmediate = parsedRequest?.urgency === "immediate";
   if (isImmediate && !showAllOptions) {
     return (
-      <RecommendScreen
-        provider={providers[0] || null}
-        onAccept={handleAccept}
-        onShowAllOptions={() => setShowAllOptions(true)}
-        isLoading={isLoading}
-      />
+      <>
+        <RecommendScreen
+          provider={providers[0] || null}
+          onAccept={handleAccept}
+          onShowAllOptions={() => setShowAllOptions(true)}
+          onOpenProfile={(p) => setActiveModalProvider(p)}
+          isLoading={isLoading}
+        />
+        {activeModalProvider && (
+          <WorkerProfileModal
+            providerIdOrUuid={activeModalProvider.id}
+            initialProviderData={activeModalProvider}
+            onClose={() => setActiveModalProvider(null)}
+            onSelect={handleAccept}
+          />
+        )}
+      </>
     );
   }
 
@@ -192,7 +206,6 @@ export function BrowseScreen() {
             </div>
           </div>
         ) : providers.length === 0 ? (
-          /* CAMBIO 4: ESTADO VACÍO REDISEÑADO */
           <div className="flex flex-col items-center justify-center py-12 text-center px-4 space-y-4">
             <SearchX className="size-12 text-zinc-400" />
             <h3 className="text-[20px] font-semibold text-zinc-950 dark:text-zinc-100">
@@ -210,7 +223,7 @@ export function BrowseScreen() {
               <button
                 type="button"
                 onClick={() => setSavedNotice(true)}
-                className="flex h-[56px] w-full items-center justify-center rounded-2xl bg-[#4F46E5] text-base font-semibold text-white transition hover:bg-indigo-700 shadow-sm"
+                className="flex h-[56px] w-full items-center justify-center rounded-2xl bg-[#7C5CFF] text-base font-semibold text-white transition hover:bg-[#6b47ff] shadow-sm cursor-pointer"
               >
                 Guardar y recibir aviso
               </button>
@@ -219,14 +232,19 @@ export function BrowseScreen() {
             <button
               type="button"
               onClick={() => router.push("/search")}
-              className="flex h-[52px] w-full items-center justify-center rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-700"
+              className="flex h-[52px] w-full items-center justify-center rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-700 cursor-pointer"
             >
               Buscar otro servicio
             </button>
           </div>
         ) : (
           <>
-            <CardStack cards={visibleCards} onAccept={handleAccept} onReject={handleReject} />
+            <CardStack
+              cards={visibleCards}
+              onAccept={handleAccept}
+              onReject={handleReject}
+              onOpenProfile={(p) => setActiveModalProvider(p)}
+            />
             <SwipeActions
               onAccept={handleAccept}
               onReject={handleReject}
@@ -235,6 +253,16 @@ export function BrowseScreen() {
               disabled={isEmpty || isLoading}
             />
           </>
+        )}
+
+        {/* MODAL DE DETALLE DE PERFIL PROFESIONAL */}
+        {activeModalProvider && (
+          <WorkerProfileModal
+            providerIdOrUuid={activeModalProvider.id}
+            initialProviderData={activeModalProvider}
+            onClose={() => setActiveModalProvider(null)}
+            onSelect={handleAccept}
+          />
         )}
       </div>
     </ScreenShell>

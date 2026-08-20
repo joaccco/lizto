@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft,
+  Lock,
   Loader2,
   MapPin,
   Send,
@@ -37,6 +38,7 @@ interface ConversationData {
   category_name?: string;
   raw_prompt?: string;
   work_status?: string;
+  is_closed?: boolean;
   messages: MessageItem[];
 }
 
@@ -100,6 +102,7 @@ export default function ConversationPage() {
   }, [conversationId]);
 
   const handleSendMessage = async (customContent?: string) => {
+    if (isClosed) return;
     const textToSend = customContent || newMessageText.trim();
     if (!textToSend || isSending) return;
 
@@ -151,6 +154,11 @@ export default function ConversationPage() {
     .join("")
     .substring(0, 2)
     .toUpperCase();
+
+  const isClosed =
+    conversation?.is_closed ||
+    conversation?.work_status === "completed" ||
+    conversation?.work_status === "cancelled";
 
   return (
     <ScreenShell className="flex flex-col h-screen py-4 justify-between relative overflow-hidden">
@@ -209,7 +217,13 @@ export default function ConversationPage() {
           <div className="rounded-[18px] bg-gradient-to-b from-white/8 to-white/3 border border-white/10 p-3.5 space-y-1 backdrop-blur-md">
             <div className="flex items-center justify-between text-[10.5px] font-mono uppercase tracking-wider text-[#A78BFA] font-medium">
               <span>Pedido de Servicio</span>
-              <span className="text-[#3DDC84]">✓ Confirmado</span>
+              {isClosed ? (
+                <span className="text-zinc-400 flex items-center gap-1">
+                  <Lock className="size-3" /> Finalizado
+                </span>
+              ) : (
+                <span className="text-[#3DDC84]">✓ Confirmado</span>
+              )}
             </div>
             <p className="text-xs text-[#F4F3F7] font-medium italic">
               «{conversation.raw_prompt}»
@@ -256,65 +270,89 @@ export default function ConversationPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* SUGGESTION CHIPS */}
-      <div className="relative z-10 py-2">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {SUGGESTION_CHIPS.map((chip, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleSendMessage(chip)}
-              className="px-3.5 py-1.5 rounded-full bg-white/6 hover:bg-white/12 border border-white/10 text-xs font-medium text-zinc-300 hover:text-white transition whitespace-nowrap cursor-pointer shrink-0"
-            >
-              {chip}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* INPUT BAR */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSendMessage();
-        }}
-        className="relative z-10 pt-2 pb-1 space-y-2"
-      >
-        {error && (
-          <div className="rounded-xl bg-red-950/60 border border-red-900/80 p-2 text-xs text-red-400">
-            {error}
+      {/* SUGGESTION CHIPS OR CLOSED BANNER */}
+      {isClosed ? (
+        <div className="relative z-10 p-4 rounded-[20px] bg-white/4 border border-white/10 text-center space-y-2 my-2">
+          <div className="flex items-center justify-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-wider font-mono">
+            <Lock className="size-4 text-zinc-500" />
+            <span>Chat Cerrado</span>
           </div>
-        )}
+          <p className="text-xs text-zinc-400 max-w-xs mx-auto">
+            Este trabajo fue {conversation?.work_status === "completed" ? "completado" : "cancelado"}. Ya no es posible enviar mensajes en este chat.
+          </p>
 
-        <div className="flex items-center gap-2 rounded-[20px] bg-[#131318] border border-white/12 p-2 focus-within:border-[#8B6BFF] transition shadow-lg">
-          <input
-            type="text"
-            value={newMessageText}
-            onChange={(e) => setNewMessageText(e.target.value)}
-            placeholder="Escribí un mensaje..."
-            maxLength={500}
-            className="flex-1 bg-transparent px-3 text-sm text-[#F4F3F7] outline-none placeholder:text-zinc-500"
-          />
+          {conversation?.work_status === "completed" && (
+            <button
+              type="button"
+              onClick={() => router.push(`/rate/${conversation.work_id || conversationId}`)}
+              className="mt-2 flex h-[48px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#F2B441] hover:bg-[#e0a230] text-xs font-extrabold text-zinc-950 shadow-[0_8px_24px_rgba(242,180,65,0.35)] transition cursor-pointer"
+            >
+              <Star className="size-4 fill-zinc-950 text-zinc-950" />
+              <span>★ Calificar trabajo de {providerName}</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="relative z-10 py-2">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {SUGGESTION_CHIPS.map((chip, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSendMessage(chip)}
+                  className="px-3.5 py-1.5 rounded-full bg-white/6 hover:bg-white/12 border border-white/10 text-xs font-medium text-zinc-300 hover:text-white transition whitespace-nowrap cursor-pointer shrink-0"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+          </div>
 
-          <button
-            type="submit"
-            disabled={!newMessageText.trim() || isSending}
-            className="size-[44px] rounded-[14px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-white flex items-center justify-center transition disabled:opacity-40 cursor-pointer shrink-0 shadow-md"
-            aria-label="Enviar mensaje"
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            className="relative z-10 pt-2 pb-1 space-y-2"
           >
-            {isSending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Send className="size-4" />
+            {error && (
+              <div className="rounded-xl bg-red-950/60 border border-red-900/80 p-2 text-xs text-red-400">
+                {error}
+              </div>
             )}
-          </button>
-        </div>
 
-        <div className="flex items-center justify-between px-2 text-[10px] font-mono text-zinc-500">
-          <span>Lizto Protegido · Chat seguro</span>
-          <span>{newMessageText.length}/500</span>
-        </div>
-      </form>
+            <div className="flex items-center gap-2 rounded-[20px] bg-[#131318] border border-white/12 p-2 focus-within:border-[#8B6BFF] transition shadow-lg">
+              <input
+                type="text"
+                value={newMessageText}
+                onChange={(e) => setNewMessageText(e.target.value)}
+                placeholder="Escribí un mensaje..."
+                maxLength={500}
+                className="flex-1 bg-transparent px-3 text-sm text-[#F4F3F7] outline-none placeholder:text-zinc-500"
+              />
+
+              <button
+                type="submit"
+                disabled={!newMessageText.trim() || isSending}
+                className="size-[44px] rounded-[14px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-white flex items-center justify-center transition disabled:opacity-40 cursor-pointer shrink-0 shadow-md"
+                aria-label="Enviar mensaje"
+              >
+                {isSending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between px-2 text-[10px] font-mono text-zinc-500">
+              <span>Lizto Protegido · Chat seguro</span>
+              <span>{newMessageText.length}/500</span>
+            </div>
+          </form>
+        </>
+      )}
     </ScreenShell>
   );
 }

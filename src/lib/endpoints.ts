@@ -32,6 +32,7 @@ export const ENDPOINTS = {
   // Providers
   PROVIDERS: "/providers",
   PROVIDER_DETAIL: (id: string) => `/providers/${id}`,
+  PROVIDER_REVIEWS: (id: string) => `/providers/${id}/reviews`,
   // Provider Profile & Dashboard
   PROVIDER_PROFILE: "/provider/profile",
   PROVIDER_AVAILABILITY: "/provider/availability",

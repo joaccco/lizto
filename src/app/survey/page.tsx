@@ -155,7 +155,11 @@ export default function SurveyPage() {
         sessionStorage.setItem("location_address", locationAddress);
       }
 
-      await submitSurvey(formattedAnswers);
+      await submitSurvey(formattedAnswers, {
+        lat: locationLat,
+        lng: locationLng,
+        address: locationAddress,
+      });
       await createMatchSession();
       router.push("/browse");
     } catch (err: any) {

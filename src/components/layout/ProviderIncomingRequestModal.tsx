@@ -30,6 +30,9 @@ interface WorkRequestItem {
   client_name: string;
   urgency: string;
   location?: string;
+  location_lat?: number;
+  location_lng?: number;
+  location_address?: string;
   status: string;
   created_at?: string;
 }
@@ -320,9 +323,9 @@ export function ProviderIncomingRequestModal() {
               </span>
               <div className="rounded-[20px] overflow-hidden border border-white/12">
                 <DynamicMapPickerContainer
-                  initialLat={-27.4692}
-                  initialLng={-58.8306}
-                  initialAddress={newRequest.location || "Córdoba 456, Corrientes"}
+                  initialLat={newRequest.location_lat ?? -27.4692}
+                  initialLng={newRequest.location_lng ?? -58.8306}
+                  initialAddress={newRequest.location_address || newRequest.location || "Córdoba 456, Corrientes"}
                   onLocationChange={() => {}}
                 />
               </div>

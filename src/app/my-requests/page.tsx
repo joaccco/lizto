@@ -221,11 +221,11 @@ export default function MyRequestsPage() {
                   return (
                     <div
                       key={item.uuid}
-                      onClick={() => router.push("/")}
-                      className="py-3.5 space-y-2 cursor-pointer hover:bg-white/[0.02] transition px-1 rounded-xl"
+                      onClick={() => router.push(`/requests/${item.uuid}`)}
+                      className="py-3.5 space-y-2 cursor-pointer hover:bg-white/[0.04] transition px-2 rounded-xl group border border-transparent hover:border-white/8"
                     >
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-[15.5px] font-bold text-[#F4F3F7]">
+                        <span className="text-[15.5px] font-bold text-[#F4F3F7] group-hover:text-[#C4B5FD] transition">
                           {categoryName}
                         </span>
                         <span className="text-[11.5px] font-mono text-zinc-500">
@@ -237,13 +237,26 @@ export default function MyRequestsPage() {
                         «{item.raw_prompt}» {providerName && `· ${providerName}`}
                       </div>
 
-                      <div>
+                      <div className="flex items-center justify-between gap-2 pt-1">
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11.5px] font-semibold ${badge.className}`}
                         >
                           <span className="size-1.5 rounded-full bg-current animate-pulse" />
                           {badge.label}
                         </span>
+
+                        {item.status === "completed" && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/rate/${item.uuid}`);
+                            }}
+                            className="px-3 py-1 rounded-full bg-[#F2B441]/16 border border-[#F2B441]/40 text-[#F2B441] hover:bg-[#F2B441]/25 text-[11.5px] font-bold transition flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>★ Calificar servicio</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

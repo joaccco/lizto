@@ -192,7 +192,10 @@ export function useServiceRequest() {
   }, []);
 
   const submitSurvey = useCallback(
-    async (answers: AnswerItem[]) => {
+    async (
+      answers: AnswerItem[],
+      locationOverride?: { lat: number; lng: number; address: string }
+    ) => {
       const activeRequestId = requestId || sessionStorage.getItem("service_request_id");
       if (!activeRequestId) {
         throw new Error("No hay una solicitud activa.");
@@ -202,11 +205,27 @@ export function useServiceRequest() {
       setError(null);
 
       try {
+        const storedAddress = typeof window !== "undefined" ? sessionStorage.getItem("location_address") : null;
+        const storedLat = typeof window !== "undefined" ? sessionStorage.getItem("location_lat") : null;
+        const storedLng = typeof window !== "undefined" ? sessionStorage.getItem("location_lng") : null;
+
+        const locationPayload = locationOverride || {
+          lat: storedLat ? parseFloat(storedLat) : -27.4692,
+          lng: storedLng ? parseFloat(storedLng) : -58.8306,
+          address: storedAddress || "Córdoba 456, Corrientes",
+        };
+
         const response = await apiFetch<SubmitSurveyResponse>(
           ENDPOINTS.REQUEST_SURVEY(activeRequestId),
           {
             method: "POST",
-            body: JSON.stringify({ answers }),
+            body: JSON.stringify({
+              answers,
+              location: locationPayload,
+              location_lat: locationPayload.lat,
+              location_lng: locationPayload.lng,
+              location_address: locationPayload.address,
+            }),
           }
         );
 

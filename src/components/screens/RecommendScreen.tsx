@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, SearchX, Star, ArrowLeft } from "lucide-react";
+import { CheckCircle2, SearchX, Star, ArrowLeft, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,6 +13,7 @@ interface RecommendScreenProps {
   provider: Provider | null;
   onAccept: () => Promise<void>;
   onShowAllOptions: () => void;
+  onOpenProfile?: (provider: Provider) => void;
   isLoading?: boolean;
 }
 
@@ -20,6 +21,7 @@ export function RecommendScreen({
   provider,
   onAccept,
   onShowAllOptions,
+  onOpenProfile,
   isLoading = false,
 }: RecommendScreenProps) {
   const router = useRouter();
@@ -47,11 +49,11 @@ export function RecommendScreen({
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex size-10 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+          className="flex size-10 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 cursor-pointer"
         >
           <ArrowLeft className="size-5" />
         </button>
-        <span className="text-xs font-semibold text-[#4F46E5] uppercase tracking-wider">
+        <span className="text-xs font-semibold text-[#8B6BFF] uppercase tracking-wider font-mono">
           Urgencia Inmediata
         </span>
       </div>
@@ -63,7 +65,6 @@ export function RecommendScreen({
           </div>
         </div>
       ) : !provider ? (
-        /* CAMBIO 4: ESTADO VACÍO CUANDO NO HAY PROFESIONALES */
         <div className="flex flex-col items-center justify-center py-12 text-center px-4 space-y-4">
           <SearchX className="size-12 text-zinc-400" />
           <h2 className="text-[20px] font-semibold text-zinc-950 dark:text-zinc-100">
@@ -81,7 +82,7 @@ export function RecommendScreen({
             <button
               type="button"
               onClick={handleSaveNotice}
-              className="flex h-[56px] w-full items-center justify-center rounded-2xl bg-[#4F46E5] text-base font-semibold text-white transition hover:bg-indigo-700 shadow-sm"
+              className="flex h-[56px] w-full items-center justify-center rounded-2xl bg-[#7C5CFF] text-base font-semibold text-white transition hover:bg-[#6b47ff] shadow-sm cursor-pointer"
             >
               Guardar y recibir aviso
             </button>
@@ -90,7 +91,7 @@ export function RecommendScreen({
           <button
             type="button"
             onClick={() => router.push("/search")}
-            className="flex h-[52px] w-full items-center justify-center rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-700"
+            className="flex h-[52px] w-full items-center justify-center rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-700 cursor-pointer"
           >
             Buscar otro servicio
           </button>
@@ -189,21 +190,33 @@ export function RecommendScreen({
 
           {/* BUTTONS */}
           <div className="space-y-3 pt-2">
-            {/* BOTÓN PRINCIPAL 64px */}
+            {/* BOTÓN VER PERFIL COMPLETO */}
+            {onOpenProfile && (
+              <button
+                type="button"
+                onClick={() => onOpenProfile(provider)}
+                className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-700 cursor-pointer"
+              >
+                <User className="size-4 text-[#8B6BFF]" />
+                <span>Ver perfil de {provider.name.split(" ")[0]}</span>
+              </button>
+            )}
+
+            {/* BOTÓN PRINCIPAL ELEGIR */}
             <button
               type="button"
               onClick={handleSelect}
               disabled={isSubmitting}
-              className="flex h-[64px] w-full items-center justify-center rounded-2xl bg-[#4F46E5] text-lg font-semibold text-white transition hover:bg-indigo-700 shadow-md disabled:opacity-60"
+              className="flex h-[60px] w-full items-center justify-center rounded-2xl bg-[#7C5CFF] text-lg font-bold text-white transition hover:bg-[#6b47ff] shadow-md disabled:opacity-60 cursor-pointer"
             >
               Elegir a {provider.name.split(" ")[0]}
             </button>
 
-            {/* BOTÓN SECUNDARIO 56px */}
+            {/* BOTÓN SECUNDARIO VER OTRAS OPCIONES */}
             <button
               type="button"
               onClick={onShowAllOptions}
-              className="flex h-[56px] w-full items-center justify-center rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-700"
+              className="flex h-[52px] w-full items-center justify-center rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-transparent text-sm font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
             >
               Ver otras opciones disponibles
             </button>
