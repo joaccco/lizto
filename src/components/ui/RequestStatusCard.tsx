@@ -54,42 +54,105 @@ export interface RequestStatusCardProps {
   onReassignProvider?: (newProvider: AlternativeProvider) => void;
 }
 
-// Lista predeterminada de profesionales verificados para reasignación rápida
-const DEFAULT_ALTERNATIVE_PROVIDERS: AlternativeProvider[] = [
-  {
-    id: "pro_alt_1",
-    name: "Carlos Gómez",
-    avatar_url: "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&auto=format&fit=crop&q=80",
-    bio: "Especialista en emergencias de cerrajería y aperturas sin daño. 10 años de trayectoria.",
-    avg_rating: 4.9,
-    total_reviews: 142,
-    total_jobs_completed: 189,
-    specialties: ["Aperturas 24hs", "Cambio de Combinación", "Cerraduras Digitales"],
-    response_time: "~5 min",
-  },
-  {
-    id: "pro_alt_2",
-    name: "Mariana Silva",
-    avatar_url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-    bio: "Cerrajera profesional matriculada. Atención personalizada y reparación de blindados.",
-    avg_rating: 4.9,
-    total_reviews: 98,
-    total_jobs_completed: 112,
-    specialties: ["Cerraduras Blindadas", "Autos y Casas", "Seguridad Integral"],
-    response_time: "~8 min",
-  },
-  {
-    id: "pro_alt_3",
-    name: "Esteban Rossi",
-    avatar_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
-    bio: "Servicio rápido de cerrajería domiciliaria y comercial con garantía de satisfacción.",
-    avg_rating: 4.8,
-    total_reviews: 76,
-    total_jobs_completed: 94,
-    specialties: ["Aperturas", "Cierres Metálicos", "Duplicados"],
-    response_time: "~10 min",
-  },
-];
+// Diccionario de Profesionales Verificados Organizados Estrictamente por Área / Especialidad
+const CATEGORY_PROVIDERS_MAP: Record<string, AlternativeProvider[]> = {
+  cerrajeria: [
+    {
+      id: "pro_cerrajero_1",
+      name: "Carlos Gómez",
+      avatar_url: "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&auto=format&fit=crop&q=80",
+      bio: "Cerrajero matriculado especializado en emergencias y aperturas de casas y autos sin daño. 10 años de trayectoria.",
+      avg_rating: 4.9,
+      total_reviews: 142,
+      total_jobs_completed: 189,
+      specialties: ["Cerrajero Matriculado", "Aperturas 24hs", "Cambio de Combinación", "Cerraduras Digitales"],
+      response_time: "~5 min",
+    },
+    {
+      id: "pro_cerrajero_2",
+      name: "Mariana Silva",
+      avatar_url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+      bio: "Cerrajera profesional de seguridad. Atención urgente, colocación de cerraduras blindadas y cerrojos.",
+      avg_rating: 4.9,
+      total_reviews: 98,
+      total_jobs_completed: 112,
+      specialties: ["Cerrajera de Seguridad", "Cerraduras Blindadas", "Autos y Casas", "Seguridad Integral"],
+      response_time: "~8 min",
+    },
+    {
+      id: "pro_cerrajero_3",
+      name: "Esteban Rossi",
+      avatar_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
+      bio: "Servicio de cerrajería urgente domiciliaria y comercial. Apertura de candados, cerrojos y portones.",
+      avg_rating: 4.8,
+      total_reviews: 76,
+      total_jobs_completed: 94,
+      specialties: ["Cerrajero Urgencias", "Aperturas Sin Daño", "Duplicados y Cerrojos"],
+      response_time: "~10 min",
+    },
+  ],
+  plomeria: [
+    {
+      id: "pro_plomero_1",
+      name: "Gustavo Benítez",
+      avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      bio: "Plomero matriculado e instalador. Desobstrucción con máquina, filtraciones y grifería.",
+      avg_rating: 4.9,
+      total_reviews: 115,
+      total_jobs_completed: 156,
+      specialties: ["Plomero Matriculado", "Desobstrucciones 24hs", "Reparación de Fugas"],
+      response_time: "~6 min",
+    },
+    {
+      id: "pro_plomero_2",
+      name: "Andrés Peralta",
+      avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      bio: "Especialista en instalación de termotanques, bombas presurizadoras y cañerías de termofusión.",
+      avg_rating: 4.8,
+      total_reviews: 84,
+      total_jobs_completed: 103,
+      specialties: ["Plomero e Instalador", "Termotanques", "Termofusión"],
+      response_time: "~9 min",
+    },
+  ],
+  electricidad: [
+    {
+      id: "pro_electricista_1",
+      name: "Javier Domínguez",
+      avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      bio: "Electricista matriculado APSE. Diagnóstico de cortocircuitos, instalación de tableros y térmicas.",
+      avg_rating: 4.9,
+      total_reviews: 130,
+      total_jobs_completed: 167,
+      specialties: ["Electricista Matriculado", "Cortocircuitos 24hs", "Tableros Eléctricos"],
+      response_time: "~5 min",
+    },
+    {
+      id: "pro_electricista_2",
+      name: "Lucas Cabrera",
+      avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      bio: "Instalación de luminarias LED, recableado de viviendas y colocación de disyuntores.",
+      avg_rating: 4.8,
+      total_reviews: 91,
+      total_jobs_completed: 118,
+      specialties: ["Electricista Domiciliario", "Instalaciones LED", "Disyuntores y Fugas"],
+      response_time: "~7 min",
+    },
+  ],
+  climatizacion: [
+    {
+      id: "pro_clima_1",
+      name: "Nicolás Herrera",
+      avatar_url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+      bio: "Técnico matriculado en refrigeración. Instalación de equipos Split, carga de gas R410/R32 y service.",
+      avg_rating: 4.9,
+      total_reviews: 105,
+      total_jobs_completed: 140,
+      specialties: ["Técnico en Climatización", "Carga de Gas Split", "Mantenimiento Preventivo"],
+      response_time: "~10 min",
+    },
+  ],
+};
 
 // Formateador de fechas y horarios para la línea de tiempo
 function formatTimelineDate(dateStr?: string, defaultHour = "20:15") {
@@ -174,7 +237,7 @@ export function RequestStatusCard({
   providerName: initialProviderName = "Roberto Medina",
   providerAvatar: initialProviderAvatar,
   providerRating: initialProviderRating = 4.9,
-  alternativeProviders = DEFAULT_ALTERNATIVE_PROVIDERS,
+  alternativeProviders = [],
   onOpenChat,
   onRate,
   onReassignProvider,
@@ -215,8 +278,32 @@ export function RequestStatusCard({
     .substring(0, 2)
     .toUpperCase();
 
-  // Filtrar estrictamente para EXCLUIR al profesional que canceló
-  const availableAlternatives = alternativeProviders.filter(
+  // 1. Obtener clave de categoría limpia (ej. Cerrajería -> cerrajeria)
+  const categoryKey = (categoryName || "cerrajeria")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+  // 2. Buscar profesionales pertenecientes únicamente a esa categoría
+  let categoryAlternatives = CATEGORY_PROVIDERS_MAP[categoryKey];
+
+  if (!categoryAlternatives || categoryAlternatives.length === 0) {
+    if (categoryKey.includes("cerraj") || categoryKey.includes("llav")) {
+      categoryAlternatives = CATEGORY_PROVIDERS_MAP["cerrajeria"];
+    } else if (categoryKey.includes("plom") || categoryKey.includes("agua")) {
+      categoryAlternatives = CATEGORY_PROVIDERS_MAP["plomeria"];
+    } else if (categoryKey.includes("electr") || categoryKey.includes("luz")) {
+      categoryAlternatives = CATEGORY_PROVIDERS_MAP["electricidad"];
+    } else if (categoryKey.includes("clima") || categoryKey.includes("aire")) {
+      categoryAlternatives = CATEGORY_PROVIDERS_MAP["climatizacion"];
+    } else {
+      categoryAlternatives = CATEGORY_PROVIDERS_MAP["cerrajeria"];
+    }
+  }
+
+  // 3. Filtrar estrictamente para EXCLUIR al profesional que canceló
+  const availableAlternatives = (alternativeProviders && alternativeProviders.length > 0 ? alternativeProviders : categoryAlternatives).filter(
     (p) => p.name.toLowerCase().trim() !== initialProviderName.toLowerCase().trim()
   );
 
@@ -527,14 +614,14 @@ export function RequestStatusCard({
                 <div className="flex items-center gap-2 mb-1">
                   <span className="inline-flex items-center gap-1 text-[10.5px] font-mono tracking-widest uppercase font-bold text-[#A8FF35] px-2.5 py-0.5 rounded-full bg-[#A8FF35]/12 border border-[#A8FF35]/30">
                     <Sparkles className="size-3" />
-                    Sin volver a cargar datos
+                    Área: {categoryName || "Cerrajería"}
                   </span>
                 </div>
                 <h3 className="text-xl font-extrabold text-[#F4F3F7]">
-                  Seleccionar un nuevo profesional
+                  Reasignar especialista de {categoryName || "Cerrajería"}
                 </h3>
                 <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  Conservaremos tu pedido («{rawPrompt}») y tu dirección. Excluimos automáticamente a{" "}
+                  Te mostramos exclusivamente profesionales verificados de <strong className="text-[#C4B5FD]">{categoryName || "Cerrajería"}</strong>. Mantenemos la descripción y dirección de tu pedido. Excluimos automáticamente a{" "}
                   <span className="text-[#FF5A5A] font-semibold">{initialProviderName}</span>.
                 </p>
               </div>
@@ -550,7 +637,7 @@ export function RequestStatusCard({
             {/* Lista de Profesionales Disponibles Filtrados */}
             <div className="space-y-3 pt-1">
               <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-bold block">
-                Profesionales verificados disponibles ({availableAlternatives.length})
+                Especialistas de {categoryName || "Cerrajería"} disponibles ({availableAlternatives.length})
               </span>
 
               {availableAlternatives.map((pro) => (
