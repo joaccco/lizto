@@ -2,13 +2,18 @@
 
 import {
   ArrowLeft,
+  CheckCircle2,
+  DollarSign,
+  FileText,
   Lock,
   Loader2,
   MapPin,
+  Plus,
   Send,
   ShieldCheck,
   Star,
   User,
+  XCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
@@ -25,6 +30,19 @@ interface MessageItem {
   content: string;
   created_at: string;
   is_me: boolean;
+}
+
+interface WorkQuote {
+  id: string;
+  uuid: string;
+  amount: number;
+  currency: string;
+  breakdown_items?: { concept: string; price: number }[];
+  estimated_hours?: number;
+  terms_conditions?: string;
+  status: "pending" | "accepted" | "rejected" | "revision_requested";
+  accepted_at?: string;
+  created_at: string;
 }
 
 interface ConversationData {
@@ -46,7 +64,7 @@ const SUGGESTION_CHIPS = [
   "¿A qué hora calculás llegar?",
   "Ya estoy esperando en la puerta.",
   "¿Necesitás algún detalle más?",
-  "¿El presupuesto es el acordado?",
+  "Envié el presupuesto para que lo revises.",
 ];
 
 export default function ConversationPage() {
@@ -56,16 +74,35 @@ export default function ConversationPage() {
 
   const [conversation, setConversation] = useState<ConversationData | null>(null);
   const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [quotes, setQuotes] = useState<WorkQuote[]>([]);
   const [newMessageText, setNewMessageText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
 
+  // Quote modal state
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [quoteAmount, setQuoteAmount] = useState("");
+  const [quoteTerms, setQuoteTerms] = useState("");
+  const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
+  const [quoteActionLoading, setQuoteActionLoading] = useState<string | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const fetchQuotes = async (workId: string) => {
+    try {
+      const res = await apiFetch<{ data: WorkQuote[] }>(`/works/${workId}/quotes`);
+      if (res.data) {
+        setQuotes(res.data);
+      }
+    } catch (e) {
+      console.warn("Could not fetch quotes", e);
+    }
   };
 
   const fetchMessages = async (isInitial = false) => {
@@ -79,6 +116,9 @@ export default function ConversationPage() {
       if (res.data) {
         setConversation(res.data);
         setMessages(res.data.messages || []);
+        if (res.data.work_id) {
+          fetchQuotes(res.data.work_id);
+        }
         if (isInitial) {
           setTimeout(scrollToBottom, 100);
         }
@@ -136,6 +176,66 @@ export default function ConversationPage() {
     }
   };
 
+  const handleSendQuote = async () => {
+    if (!conversation?.work_id || !quoteAmount) return;
+    setIsSubmittingQuote(true);
+    setError(null);
+
+    try {
+      await apiFetch(`/works/${conversation.work_id}/quotes`, {
+        method: "POST",
+        body: JSON.stringify({
+          amount: parseFloat(quoteAmount),
+          terms_conditions: quoteTerms || "Presupuesto acordado.",
+        }),
+      });
+
+      setShowQuoteModal(false);
+      setQuoteAmount("");
+      setQuoteTerms("");
+      if (conversation.work_id) {
+        await fetchQuotes(conversation.work_id);
+      }
+      handleSendMessage(`📄 He enviado una propuesta comercial por $${parseFloat(quoteAmount).toLocaleString("es-AR")}`);
+    } catch (err: any) {
+      setError(err?.message || "Error enviando presupuesto.");
+    } finally {
+      setIsSubmittingQuote(false);
+    }
+  };
+
+  const handleAcceptQuote = async (quoteUuid: string) => {
+    if (!conversation?.work_id) return;
+    setQuoteActionLoading(quoteUuid);
+    try {
+      await apiFetch(`/works/${conversation.work_id}/quotes/${quoteUuid}/accept`, {
+        method: "POST",
+      });
+      await fetchQuotes(conversation.work_id);
+      handleSendMessage("✅ He aceptado la propuesta comercial.");
+    } catch (err: any) {
+      setError(err?.message || "Error al aceptar presupuesto.");
+    } finally {
+      setQuoteActionLoading(null);
+    }
+  };
+
+  const handleRejectQuote = async (quoteUuid: string) => {
+    if (!conversation?.work_id) return;
+    setQuoteActionLoading(quoteUuid);
+    try {
+      await apiFetch(`/works/${conversation.work_id}/quotes/${quoteUuid}/reject`, {
+        method: "POST",
+      });
+      await fetchQuotes(conversation.work_id);
+      handleSendMessage("❌ He rechazado la propuesta comercial.");
+    } catch (err: any) {
+      setError(err?.message || "Error al rechazar presupuesto.");
+    } finally {
+      setQuoteActionLoading(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <ScreenShell className="flex items-center justify-center min-h-screen">
@@ -160,9 +260,11 @@ export default function ConversationPage() {
     conversation?.work_status === "completed" ||
     conversation?.work_status === "cancelled";
 
+  const latestQuote = quotes[0];
+
   return (
     <ScreenShell className="flex flex-col h-screen py-4 justify-between relative overflow-hidden">
-      {/* Background Subtle Radial Glow */}
+      {/* Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 size-[320px] rounded-full bg-[radial-gradient(circle,rgba(124,92,255,0.18)_0%,transparent_65%)] blur-xl pointer-events-none" />
 
       {/* HEADER BAR */}
@@ -208,6 +310,17 @@ export default function ConversationPage() {
             </p>
           </div>
         </div>
+
+        {!isClosed && conversation?.work_id && (
+          <button
+            type="button"
+            onClick={() => setShowQuoteModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#7C5CFF]/16 border border-[#7C5CFF]/40 text-[#C4B5FD] hover:bg-[#7C5CFF]/26 text-xs font-bold transition cursor-pointer shrink-0"
+          >
+            <DollarSign className="size-3.5" />
+            <span>Presupuesto</span>
+          </button>
+        )}
       </div>
 
       {/* CHAT MESSAGES CONTAINER */}
@@ -231,8 +344,78 @@ export default function ConversationPage() {
           </div>
         )}
 
+        {/* LATEST COMMERCIAL QUOTE CARD */}
+        {latestQuote && (
+          <div className="rounded-[20px] bg-[#16161E] border border-[#7C5CFF]/30 p-4 space-y-3 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#A78BFA] font-semibold">
+                <FileText className="size-4" />
+                <span>Presupuesto Comercial</span>
+              </div>
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold ${
+                  latestQuote.status === "accepted"
+                    ? "bg-emerald-500/16 text-emerald-400 border border-emerald-500/30"
+                    : latestQuote.status === "rejected"
+                    ? "bg-red-500/16 text-red-400 border border-red-500/30"
+                    : "bg-amber-500/16 text-amber-400 border border-amber-500/30 animate-pulse"
+                }`}
+              >
+                {latestQuote.status === "accepted"
+                  ? "Aceptado ✓"
+                  : latestQuote.status === "rejected"
+                  ? "Rechazado"
+                  : "Pendiente de aprobación"}
+              </span>
+            </div>
+
+            <div className="flex items-baseline justify-between border-y border-white/8 py-2">
+              <span className="text-xs text-zinc-400 font-medium">Monto Total</span>
+              <span className="text-xl font-extrabold text-[#F4F3F7]">
+                ${latestQuote.amount.toLocaleString("es-AR")} {latestQuote.currency}
+              </span>
+            </div>
+
+            {latestQuote.terms_conditions && (
+              <p className="text-xs text-zinc-300 italic bg-white/4 p-2.5 rounded-xl border border-white/6">
+                "{latestQuote.terms_conditions}"
+              </p>
+            )}
+
+            {latestQuote.status === "pending" && !isClosed && (
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleAcceptQuote(latestQuote.uuid)}
+                  disabled={quoteActionLoading === latestQuote.uuid}
+                  className="flex-1 flex h-[42px] items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition shadow-md cursor-pointer"
+                >
+                  {quoteActionLoading === latestQuote.uuid ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle2 className="size-4" />
+                      <span>Aceptar presupuesto</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleRejectQuote(latestQuote.uuid)}
+                  disabled={quoteActionLoading === latestQuote.uuid}
+                  className="flex h-[42px] px-4 items-center justify-center gap-1.5 rounded-xl bg-white/6 hover:bg-white/12 border border-white/10 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+                >
+                  <XCircle className="size-4 text-zinc-400" />
+                  <span>Rechazar</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
+          <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">
             <span className="size-2 rounded-full bg-[#8B6BFF] animate-pulse" />
             <p className="text-sm font-bold text-[#F4F3F7]">Chat directo activo</p>
             <p className="text-xs text-zinc-500 max-w-xs">
@@ -352,6 +535,65 @@ export default function ConversationPage() {
             </div>
           </form>
         </>
+      )}
+
+      {/* CREATE QUOTE MODAL */}
+      {showQuoteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[#16161E] border border-white/12 rounded-[24px] p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/8 pb-3">
+              <h3 className="text-lg font-bold text-white">Enviar Presupuesto Comercial</h3>
+              <button
+                type="button"
+                onClick={() => setShowQuoteModal(false)}
+                className="text-zinc-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-mono uppercase text-zinc-400 font-semibold block mb-1">
+                  Monto Total ($ ARS) *
+                </label>
+                <input
+                  type="number"
+                  value={quoteAmount}
+                  onChange={(e) => setQuoteAmount(e.target.value)}
+                  placeholder="Ej: 18500"
+                  className="w-full h-12 px-4 rounded-xl bg-white/6 border border-white/12 text-base font-bold text-white outline-none focus:border-[#7C5CFF]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-mono uppercase text-zinc-400 font-semibold block mb-1">
+                  Términos o Desglose
+                </label>
+                <textarea
+                  rows={3}
+                  value={quoteTerms}
+                  onChange={(e) => setQuoteTerms(e.target.value)}
+                  placeholder="Ej: Incluye repuesto de cerradura y garantía de 30 días."
+                  className="w-full p-3 rounded-xl bg-white/6 border border-white/12 text-sm text-white outline-none focus:border-[#7C5CFF]"
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSendQuote}
+              disabled={!quoteAmount || isSubmittingQuote}
+              className="flex h-[48px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-sm font-bold text-white transition disabled:opacity-40 cursor-pointer shadow-lg"
+            >
+              {isSubmittingQuote ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <span>Enviar propuesta al cliente →</span>
+              )}
+            </button>
+          </div>
+        </div>
       )}
     </ScreenShell>
   );

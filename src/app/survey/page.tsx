@@ -52,9 +52,9 @@ export default function SurveyPage() {
 
   const [categorySlug, setCategorySlug] = useState<string>("cerrajeria");
   const [showMapStep, setShowMapStep] = useState(false);
-  const [locationLat, setLocationLat] = useState<number>(-27.4692);
-  const [locationLng, setLocationLng] = useState<number>(-58.8306);
-  const [locationAddress, setLocationAddress] = useState<string>("Thames 1842, Palermo");
+  const [locationLat, setLocationLat] = useState<number>(-34.5889);
+  const [locationLng, setLocationLng] = useState<number>(-58.4306);
+  const [locationAddress, setLocationAddress] = useState<string>("Thames 1842, Palermo, CABA");
 
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
