@@ -326,6 +326,7 @@ export function RequestStatusCard({
                       src={currentProviderAvatar}
                       alt={currentProviderName}
                       fill
+                      unoptimized
                       sizes="44px"
                       className="object-cover rounded-full"
                       onError={() => setImageError(true)}
@@ -565,6 +566,7 @@ export function RequestStatusCard({
                             src={pro.avatar_url}
                             alt={pro.name}
                             fill
+                            unoptimized
                             sizes="48px"
                             className="object-cover rounded-full"
                           />
