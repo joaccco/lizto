@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ConditionalBottomNav } from "@/components/layout/ConditionalBottomNav";
-import { ProviderIncomingRequestModal } from "@/components/layout/ProviderIncomingRequestModal";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/components/ui/Toast";
 
@@ -32,7 +31,6 @@ export default function RootLayout({
           <ToastProvider>
             <AuthProvider>
               <main className="pb-24 flex-1">{children}</main>
-              <ProviderIncomingRequestModal />
               <ConditionalBottomNav />
             </AuthProvider>
           </ToastProvider>
