@@ -1,7 +1,10 @@
 "use client";
 
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { MapPin, Navigation, Search, Check, Sparkles, Layers, Eye, Plus, Minus } from "lucide-react";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 
 interface MapPickerContainerProps {
   initialLat?: number;
@@ -10,69 +13,46 @@ interface MapPickerContainerProps {
   onLocationChange: (lat: number, lng: number, address: string) => void;
 }
 
-// Estilos JSON Dark para Google Maps JavaScript API
-const GOOGLE_MAPS_DARK_STYLE = [
-  { elementType: "geometry", stylers: [{ color: "#0d0d12" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#0d0d12" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#8a8a9e" }] },
-  {
-    featureType: "administrative.locality",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#c4b5fd" }],
-  },
-  {
-    featureType: "poi",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#8b6bff" }],
-  },
-  {
-    featureType: "poi.park",
-    elementType: "geometry",
-    stylers: [{ color: "#13131c" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [{ color: "#1f1f2e" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#13131c" }],
-  },
-  {
-    featureType: "road",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#9e9eb4" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry",
-    stylers: [{ color: "#332a68" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#1c1738" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#d8b4fe" }],
-  },
-  {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#080811" }],
-  },
-  {
-    featureType: "water",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#4f4f66" }],
-  },
-];
+// Icono Neón Personalizado de Alto Impacto para el Pin del Mapa
+const customPinIcon = L.divIcon({
+  className: "custom-leaflet-neon-pin",
+  html: `
+    <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+      <div style="
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #8B6BFF 0%, #7C5CFF 100%);
+        border: 3px solid #A8FF35;
+        box-shadow: 0 0 30px rgba(124, 92, 255, 0.95), 0 0 12px rgba(168, 255, 53, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: grab;
+        transform: translateY(-4px);
+      ">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 8 0 0 1 16 0Z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+      </div>
+      <div style="
+        width: 12px;
+        height: 6px;
+        background: #A8FF35;
+        border-radius: 50%;
+        filter: blur(1.5px);
+        margin-top: 1px;
+        box-shadow: 0 0 10px #A8FF35;
+      "></div>
+    </div>
+  `,
+  iconSize: [44, 52],
+  iconAnchor: [22, 48],
+});
 
-// Presets de barrios y zonas frecuentes
+// Presets de barrios y zonas frecuentes para selección rápida instantánea
 const NEIGHBORHOOD_PRESETS = [
   { name: "Palermo", lat: -34.5889, lng: -58.4306, address: "Thames 1842, Palermo, CABA" },
   { name: "Recoleta", lat: -34.5881, lng: -58.3974, address: "Av. Alvear 1650, Recoleta, CABA" },
@@ -83,6 +63,25 @@ const NEIGHBORHOOD_PRESETS = [
   { name: "Caballito", lat: -34.6186, lng: -58.4419, address: "Av. Rivadavia 5000, Caballito, CABA" },
   { name: "Zona Norte", lat: -34.5200, lng: -58.4900, address: "Av. Libertador 2200, Vicente López" },
 ];
+
+// Componente React-Leaflet para recentrar la vista del mapa suavemente
+function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView([lat, lng], map.getZoom());
+  }, [lat, lng, map]);
+  return null;
+}
+
+// Componente React-Leaflet para capturar CLICS DIRECTOS en cualquier punto del mapa
+function MapEvents({ onSelectCoords }: { onSelectCoords: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onSelectCoords(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
 
 export default function MapPickerContainer({
   initialLat = -34.5889,
@@ -99,50 +98,22 @@ export default function MapPickerContainer({
   const [activePreset, setActivePreset] = useState<string>("Palermo");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  // Modos de previsualización: 'street' (Callejero Dark) o 'satellite' (Satélite Real HD)
-  const [mapMode, setMapMode] = useState<"street" | "satellite">("street");
-  const [zoomLevel, setZoomLevel] = useState<number>(16);
+  // Modos de mapa: 'dark' (Callejero Google Dark) o 'satellite' (Satélite Real Google Maps HD)
+  const [mapMode, setMapMode] = useState<"dark" | "satellite">("dark");
+  const markerRef = useRef<L.Marker | null>(null);
 
-  const googleMapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markerInstanceRef = useRef<any>(null);
-  const [isGoogleApiLoaded, setIsGoogleApiLoaded] = useState(false);
-
-  // Helper de notificaciones flotantes
+  // Helper para notificaciones rápidas
   const notifyStatus = (msg: string) => {
     setStatusMessage(msg);
     setTimeout(() => setStatusMessage(null), 4000);
   };
 
-  // Geocodificación inversa con fallback ultra-rápido (nunca se traba)
+  // Geocodificación inversa con fallback garantizado (NUNCA SE QUEDA TRABADO)
   const fetchAddressFromCoords = useCallback(
     async (newLat: number, newLng: number) => {
       setIsGeocoding(true);
 
-      // 1. Si tenemos Google Maps Geocoder API en navegador
-      if (typeof window !== "undefined" && (window as any).google?.maps?.Geocoder) {
-        try {
-          const geocoder = new (window as any).google.maps.Geocoder();
-          const response = await geocoder.geocode({
-            location: { lat: newLat, lng: newLng },
-          });
-
-          if (response.results && response.results[0]) {
-            const formatted = response.results[0].formatted_address
-              .split(",")
-              .slice(0, 3)
-              .join(",");
-            setAddress(formatted);
-            onLocationChange(newLat, newLng, formatted);
-            setIsGeocoding(false);
-            return;
-          }
-        } catch {
-          // Continuar al fallback
-        }
-      }
-
-      // 2. Intentar OSM Nominatim con timeout breve de 2s
+      // Intentar Nominatim u OpenStreetMap con timeout estricto de 2s
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2000);
@@ -164,15 +135,15 @@ export default function MapPickerContainer({
           }
         }
       } catch {
-        // Ignorar error de red
+        // Fallback silencioso
       }
 
-      // 3. Fallback estético garantizado
+      // Fallback estético garantizado con coordenadas
       const matchedPreset = NEIGHBORHOOD_PRESETS.find(
         (p) => Math.abs(p.lat - newLat) < 0.03 && Math.abs(p.lng - newLng) < 0.03
       );
       const fallbackDisplay = matchedPreset
-        ? `${matchedPreset.name} (${newLat.toFixed(4)}, ${newLng.toFixed(4)})`
+        ? `${matchedPreset.name} (Lat: ${newLat.toFixed(4)}, Lng: ${newLng.toFixed(4)})`
         : `Ubicación Seleccionada (${newLat.toFixed(4)}, ${newLng.toFixed(4)})`;
 
       setAddress(fallbackDisplay);
@@ -182,20 +153,15 @@ export default function MapPickerContainer({
     [onLocationChange]
   );
 
-  // Actualizar coordenadas y sincronizar estado
-  const updateLocation = useCallback(
-    (newLat: number, newLng: number, newAddr?: string) => {
+  // Manejador central cuando el usuario HACE CLIC en el mapa o ARRASTRA el Pin
+  const handleSelectCoords = useCallback(
+    (newLat: number, newLng: number, customAddr?: string) => {
       setLat(newLat);
       setLng(newLng);
 
-      if (mapInstanceRef.current && markerInstanceRef.current) {
-        mapInstanceRef.current.panTo({ lat: newLat, lng: newLng });
-        markerInstanceRef.current.setPosition({ lat: newLat, lng: newLng });
-      }
-
-      if (newAddr) {
-        setAddress(newAddr);
-        onLocationChange(newLat, newLng, newAddr);
+      if (customAddr) {
+        setAddress(customAddr);
+        onLocationChange(newLat, newLng, customAddr);
       } else {
         fetchAddressFromCoords(newLat, newLng);
       }
@@ -203,71 +169,22 @@ export default function MapPickerContainer({
     [fetchAddressFromCoords, onLocationChange]
   );
 
-  // Carga opcional de Google Maps JS API si hay API key en variables de entorno
-  useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-    if (apiKey && typeof window !== "undefined") {
-      if ((window as any).google?.maps) {
-        initGoogleMap();
-      } else {
-        const existingScript = document.getElementById("google-maps-script");
-        if (!existingScript) {
-          const script = document.createElement("script");
-          script.id = "google-maps-script";
-          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-          script.async = true;
-          script.onload = () => initGoogleMap();
-          script.onerror = () => setIsGoogleApiLoaded(false);
-          document.head.appendChild(script);
+  // Manejador del arrastre del Pin Marker (dragend)
+  const eventHandlers = useMemo(
+    () => ({
+      dragend() {
+        const marker = markerRef.current;
+        if (marker != null) {
+          const latLng = marker.getLatLng();
+          handleSelectCoords(latLng.lat, latLng.lng);
+          notifyStatus("Pin movido a nueva ubicación.");
         }
-      }
-    }
+      },
+    }),
+    [handleSelectCoords]
+  );
 
-    function initGoogleMap() {
-      if (!googleMapRef.current || !(window as any).google?.maps) return;
-
-      try {
-        const mapOptions = {
-          center: { lat, lng },
-          zoom: zoomLevel,
-          styles: mapMode === "street" ? GOOGLE_MAPS_DARK_STYLE : [],
-          mapTypeId: mapMode === "satellite" ? "hybrid" : "roadmap",
-          disableDefaultUI: true,
-          zoomControl: true,
-          gestureHandling: "greedy",
-        };
-
-        const map = new (window as any).google.maps.Map(googleMapRef.current, mapOptions);
-        const marker = new (window as any).google.maps.Marker({
-          position: { lat, lng },
-          map,
-          draggable: true,
-          animation: (window as any).google.maps.Animation.DROP,
-        });
-
-        map.addListener("click", (e: any) => {
-          const clickedLat = e.latLng.lat();
-          const clickedLng = e.latLng.lng();
-          marker.setPosition({ lat: clickedLat, lng: clickedLng });
-          updateLocation(clickedLat, clickedLng);
-        });
-
-        marker.addListener("dragend", () => {
-          const pos = marker.getPosition();
-          updateLocation(pos.lat(), pos.lng());
-        });
-
-        mapInstanceRef.current = map;
-        markerInstanceRef.current = marker;
-        setIsGoogleApiLoaded(true);
-      } catch {
-        setIsGoogleApiLoaded(false);
-      }
-    }
-  }, [lat, lng, mapMode, zoomLevel, updateLocation]);
-
-  // Manejador seguro de GPS con timeout de 4 segundos (protección total contra trabas)
+  // Manejador seguro de GPS del navegador con timeout estricto de 4s
   const handleUseCurrentLocation = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
       notifyStatus("Geolocalización no soportada en este navegador.");
@@ -283,7 +200,7 @@ export default function MapPickerContainer({
       if (!hasResponded) {
         hasResponded = true;
         setIsLocating(false);
-        notifyStatus("Señal GPS demorada. Podés elegir la dirección en la lista o buscador.");
+        notifyStatus("Señal GPS demorada. Podés hacer clic en el mapa o buscar abajo.");
       }
     }, 4000);
 
@@ -296,9 +213,9 @@ export default function MapPickerContainer({
         const newLat = pos.coords.latitude;
         const newLng = pos.coords.longitude;
         setActivePreset("");
-        updateLocation(newLat, newLng);
+        handleSelectCoords(newLat, newLng);
         setIsLocating(false);
-        notifyStatus("¡Ubicación GPS obtenida correctamente!");
+        notifyStatus("¡Pin colocado en tu ubicación GPS!");
       },
       (error) => {
         if (hasResponded) return;
@@ -307,9 +224,9 @@ export default function MapPickerContainer({
         setIsLocating(false);
 
         if (error.code === error.PERMISSION_DENIED) {
-          notifyStatus("Permiso GPS denegado. Escribí tu dirección o seleccioná en la lista.");
+          notifyStatus("Permiso GPS denegado. Tocá el mapa o elegí en la lista.");
         } else {
-          notifyStatus("No se pudo obtener señal GPS. Escribí tu dirección abajo.");
+          notifyStatus("No se pudo obtener señal GPS. Tocá el mapa para fijar el pin.");
         }
       },
       {
@@ -320,14 +237,14 @@ export default function MapPickerContainer({
     );
   };
 
-  // Selección de barrio preset rápido
+  // Selección rápida de barrios preset
   const handleSelectPreset = (preset: (typeof NEIGHBORHOOD_PRESETS)[0]) => {
     setActivePreset(preset.name);
     setSearchQuery(preset.address);
-    updateLocation(preset.lat, preset.lng, preset.address);
+    handleSelectCoords(preset.lat, preset.lng, preset.address);
   };
 
-  // Búsqueda por texto en barra de dirección
+  // Búsqueda por texto en la barra de búsqueda
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
@@ -343,31 +260,26 @@ export default function MapPickerContainer({
       const customAddr = searchQuery.trim();
       setAddress(customAddr);
       onLocationChange(lat, lng, customAddr);
-      notifyStatus(`Ubicación actualizada: ${customAddr}`);
+      notifyStatus(`Dirección fijada en: ${customAddr}`);
     }
   };
 
-  // Generación de URL estandarizada de Google Maps Embed para Previsualización Real
-  const googleMapsEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(
-    address || `${lat},${lng}`
-  )}&t=${mapMode === "satellite" ? "k" : "m"}&z=${zoomLevel}&ie=UTF8&iwloc=&output=embed`;
-
   return (
     <div className="space-y-4 w-full">
-      {/* Encabezado Principal y Botón GPS */}
+      {/* Encabezado y Botón GPS */}
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1 text-[11px] font-mono tracking-wider uppercase text-[#C4B5FD] font-semibold px-2.5 py-0.5 rounded-full bg-[#7C5CFF]/15 border border-[#7C5CFF]/30">
               <Sparkles className="size-3 text-[#A8FF35]" />
-              Previsualización Google Maps Real
+              Pin Interactivo Google Maps Style
             </span>
           </div>
           <h3 className="text-[20px] font-extrabold text-[#F4F3F7] tracking-tight">
-            ¿Dónde es el trabajo?
+            ¿Dónde es el servicio?
           </h3>
           <p className="text-xs text-zinc-400 font-medium mt-0.5">
-            Comprobá la ubicación exacta de tu casa en el mapa de Google
+            Tocá en cualquier lugar del mapa o arrastrá el pin neón a la puerta de tu casa
           </p>
         </div>
 
@@ -390,20 +302,20 @@ export default function MapPickerContainer({
         </div>
       )}
 
-      {/* Selector de Modo de Mapa (Callejero Dark vs Satélite Real HD) y Controles de Zoom */}
+      {/* Selector de Modo de Capa (Callejero Dark vs Satélite Real Google HD) */}
       <div className="flex items-center justify-between gap-2 bg-white/4 p-1.5 rounded-2xl border border-white/10">
         <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={() => setMapMode("street")}
+            onClick={() => setMapMode("dark")}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-              mapMode === "street"
+              mapMode === "dark"
                 ? "bg-[#7C5CFF] text-white shadow-md"
                 : "bg-transparent text-zinc-400 hover:text-white"
             }`}
           >
             <Eye className="size-3.5" />
-            <span>Callejero Dark</span>
+            <span>Callejero Google Dark</span>
           </button>
 
           <button
@@ -416,31 +328,12 @@ export default function MapPickerContainer({
             }`}
           >
             <Layers className="size-3.5" />
-            <span>Satélite Real HD</span>
+            <span>Satélite Google HD</span>
           </button>
         </div>
 
-        {/* Controles de Zoom para Previsualización */}
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setZoomLevel((z) => Math.min(z + 1, 19))}
-            className="size-7 rounded-lg bg-white/8 hover:bg-white/16 flex items-center justify-center text-white transition cursor-pointer"
-            title="Acercar"
-          >
-            <Plus className="size-3.5" />
-          </button>
-          <span className="text-[10px] font-mono font-bold text-zinc-400 px-1">
-            z{zoomLevel}
-          </span>
-          <button
-            type="button"
-            onClick={() => setZoomLevel((z) => Math.max(z - 1, 12))}
-            className="size-7 rounded-lg bg-white/8 hover:bg-white/16 flex items-center justify-center text-white transition cursor-pointer"
-            title="Alejar"
-          >
-            <Minus className="size-3.5" />
-          </button>
+        <div className="text-[11px] font-mono text-zinc-400 font-semibold px-2">
+          📍 Pin Arrastrable
         </div>
       </div>
 
@@ -452,14 +345,14 @@ export default function MapPickerContainer({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Escribí tu calle y altura (ej: Thames 1842, Palermo)..."
+            placeholder="Buscar calle y número (ej: Thames 1842, Palermo)..."
             className="w-full h-11 pl-10 pr-24 rounded-xl border border-white/12 bg-white/5 text-xs text-[#F4F3F7] placeholder-zinc-500 focus:outline-none focus:border-[#7C5CFF] focus:ring-1 focus:ring-[#7C5CFF] transition"
           />
           <button
             type="submit"
             className="absolute right-1.5 px-3 py-1.5 rounded-lg bg-[#7C5CFF] hover:bg-[#6b47ff] text-[11px] font-bold text-white transition cursor-pointer"
           >
-            Ver en mapa
+            Ir a dirección
           </button>
         </div>
       </form>
@@ -491,46 +384,55 @@ export default function MapPickerContainer({
         </div>
       </div>
 
-      {/* CONTENEDOR DE PREVISUALIZACIÓN REAL EN GOOGLE MAPS */}
+      {/* MAPA INTERACTIVO REAL: CLIC DIRECTO Y PIN ARRASTRABLE 100% OPERATIVO */}
       <div className="relative h-72 w-full overflow-hidden rounded-[24px] border border-white/16 shadow-2xl bg-[#0d0d12]">
-        {/* Instancia de Google Maps JS API (si existe API key) */}
-        {isGoogleApiLoaded ? (
-          <div ref={googleMapRef} className="h-full w-full" />
-        ) : (
-          /* Previsualizador Google Maps Embed Real con Filtro Oscuro / Satelital HD */
-          <div className="relative h-full w-full overflow-hidden">
-            <iframe
-              title="Google Maps Location Preview"
-              src={googleMapsEmbedUrl}
-              width="100%"
-              height="100%"
-              style={{
-                border: 0,
-                filter:
-                  mapMode === "street"
-                    ? "invert(90%) hue-rotate(180deg) contrast(1.15) saturate(1.2)"
-                    : "contrast(1.08) brightness(0.95)",
-              }}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="h-full w-full pointer-events-auto"
+        <MapContainer
+          center={[lat, lng]}
+          zoom={16}
+          scrollWheelZoom={true}
+          className="h-full w-full z-0 cursor-crosshair"
+        >
+          {/* Capas de Azulejos: CartoDB Dark Matter o Google Maps Satélite HD */}
+          {mapMode === "dark" ? (
+            <TileLayer
+              attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              subdomains="abcd"
+              maxZoom={19}
             />
-          </div>
-        )}
+          ) : (
+            <TileLayer
+              attribution='&copy; <a href="https://www.google.com/maps">Google Maps</a>'
+              url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+              maxZoom={20}
+            />
+          )}
 
-        {/* Pin indicador Neón centrado sobre el mapa de Google */}
-        <div className="absolute top-3 right-3 z-[20] rounded-xl bg-[#08080A]/90 backdrop-blur-md px-3.5 py-2 text-[11px] font-semibold text-[#F4F3F7] shadow-xl border border-white/15 flex items-center gap-2">
-          <MapPin className="size-4 text-[#A8FF35]" />
-          <span>
-            {mapMode === "satellite" ? "Vista Satelital Google HD" : "Vista Google Maps Dark"}
-          </span>
+          {/* Marcador Neón Arrastrable */}
+          <Marker
+            draggable={true}
+            eventHandlers={eventHandlers}
+            position={[lat, lng]}
+            ref={markerRef}
+            icon={customPinIcon}
+          />
+
+          {/* Escuchador de Clics Directos en el Mapa */}
+          <MapEvents onSelectCoords={handleSelectCoords} />
+          <RecenterMap lat={lat} lng={lng} />
+        </MapContainer>
+
+        {/* Chip Flotante Informativo sobre el Mapa */}
+        <div className="absolute top-3 left-3 z-[400] rounded-xl bg-[#08080A]/88 backdrop-blur-md px-3.5 py-1.5 text-[11px] font-semibold text-[#F4F3F7] shadow-md border border-white/15 flex items-center gap-2 pointer-events-none">
+          <MapPin className="size-3.5 text-[#A8FF35]" />
+          <span>Tocá cualquier punto del mapa para fijar el pin o arrastralo</span>
         </div>
       </div>
 
       {/* Campo de Confirmación de Dirección Seleccionada */}
       <div className="space-y-1.5">
         <label className="block text-[10.5px] font-mono tracking-wider uppercase text-zinc-400 font-semibold">
-          Dirección donde recibirás al profesional
+          Dirección confirmada para la visita
         </label>
         <div className="flex items-center gap-3 rounded-[18px] border border-white/12 bg-white/6 p-3.5 shadow-md focus-within:border-[#7C5CFF] focus-within:ring-1 focus-within:ring-[#7C5CFF] transition">
           <div className="size-8 rounded-lg bg-[#7C5CFF]/15 text-[#8B6BFF] flex items-center justify-center shrink-0 font-bold">
