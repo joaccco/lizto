@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Navigation, Search, Check, Sparkles } from "lucide-react";
+import { MapPin, Navigation, Search, Check, Sparkles, Layers, Eye, Plus, Minus } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 
 interface MapPickerContainerProps {
@@ -10,7 +10,7 @@ interface MapPickerContainerProps {
   onLocationChange: (lat: number, lng: number, address: string) => void;
 }
 
-// Google Maps Dark Theme Custom Styles JSON
+// Estilos JSON Dark para Google Maps JavaScript API
 const GOOGLE_MAPS_DARK_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#0d0d12" }] },
   { elementType: "labels.text.stroke", stylers: [{ color: "#0d0d12" }] },
@@ -72,7 +72,7 @@ const GOOGLE_MAPS_DARK_STYLE = [
   },
 ];
 
-// Presets de barrios y zonas frecuentes para selección rápida instantánea
+// Presets de barrios y zonas frecuentes
 const NEIGHBORHOOD_PRESETS = [
   { name: "Palermo", lat: -34.5889, lng: -58.4306, address: "Thames 1842, Palermo, CABA" },
   { name: "Recoleta", lat: -34.5881, lng: -58.3974, address: "Av. Alvear 1650, Recoleta, CABA" },
@@ -99,23 +99,27 @@ export default function MapPickerContainer({
   const [activePreset, setActivePreset] = useState<string>("Palermo");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
+  // Modos de previsualización: 'street' (Callejero Dark) o 'satellite' (Satélite Real HD)
+  const [mapMode, setMapMode] = useState<"street" | "satellite">("street");
+  const [zoomLevel, setZoomLevel] = useState<number>(16);
+
   const googleMapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerInstanceRef = useRef<any>(null);
-  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+  const [isGoogleApiLoaded, setIsGoogleApiLoaded] = useState(false);
 
-  // Helper de notificación rápida
+  // Helper de notificaciones flotantes
   const notifyStatus = (msg: string) => {
     setStatusMessage(msg);
     setTimeout(() => setStatusMessage(null), 4000);
   };
 
-  // Geocodificación inversa con fallback ultra-rápido (nunca se queda trabado)
+  // Geocodificación inversa con fallback ultra-rápido (nunca se traba)
   const fetchAddressFromCoords = useCallback(
     async (newLat: number, newLng: number) => {
       setIsGeocoding(true);
 
-      // 1. Si tenemos Google Maps Geocoder disponible
+      // 1. Si tenemos Google Maps Geocoder API en navegador
       if (typeof window !== "undefined" && (window as any).google?.maps?.Geocoder) {
         try {
           const geocoder = new (window as any).google.maps.Geocoder();
@@ -138,10 +142,10 @@ export default function MapPickerContainer({
         }
       }
 
-      // 2. Intentar Nominatim u OpenStreetMap con timeout de 2.5s
+      // 2. Intentar OSM Nominatim con timeout breve de 2s
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
 
         const res = await fetch(
           `https://nominatim.openstreetmap.org/reverse?lat=${newLat}&lon=${newLng}&format=json`,
@@ -160,7 +164,7 @@ export default function MapPickerContainer({
           }
         }
       } catch {
-        // Ignorar error de red y usar fallback estético de coordenadas
+        // Ignorar error de red
       }
 
       // 3. Fallback estético garantizado
@@ -168,8 +172,8 @@ export default function MapPickerContainer({
         (p) => Math.abs(p.lat - newLat) < 0.03 && Math.abs(p.lng - newLng) < 0.03
       );
       const fallbackDisplay = matchedPreset
-        ? `${matchedPreset.name} (Aprox. Lat: ${newLat.toFixed(4)}, Lng: ${newLng.toFixed(4)})`
-        : `Zona Ubicación (${newLat.toFixed(4)}, ${newLng.toFixed(4)})`;
+        ? `${matchedPreset.name} (${newLat.toFixed(4)}, ${newLng.toFixed(4)})`
+        : `Ubicación Seleccionada (${newLat.toFixed(4)}, ${newLng.toFixed(4)})`;
 
       setAddress(fallbackDisplay);
       onLocationChange(newLat, newLng, fallbackDisplay);
@@ -178,7 +182,7 @@ export default function MapPickerContainer({
     [onLocationChange]
   );
 
-  // Actualizar coordenadas y sincronizar con mapa y padre
+  // Actualizar coordenadas y sincronizar estado
   const updateLocation = useCallback(
     (newLat: number, newLng: number, newAddr?: string) => {
       setLat(newLat);
@@ -199,7 +203,7 @@ export default function MapPickerContainer({
     [fetchAddressFromCoords, onLocationChange]
   );
 
-  // Inicializar Google Maps API si el Script está disponible en el entorno
+  // Carga opcional de Google Maps JS API si hay API key en variables de entorno
   useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -214,7 +218,7 @@ export default function MapPickerContainer({
           script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
           script.async = true;
           script.onload = () => initGoogleMap();
-          script.onerror = () => setIsGoogleMapsLoaded(false);
+          script.onerror = () => setIsGoogleApiLoaded(false);
           document.head.appendChild(script);
         }
       }
@@ -226,8 +230,9 @@ export default function MapPickerContainer({
       try {
         const mapOptions = {
           center: { lat, lng },
-          zoom: 15,
-          styles: GOOGLE_MAPS_DARK_STYLE,
+          zoom: zoomLevel,
+          styles: mapMode === "street" ? GOOGLE_MAPS_DARK_STYLE : [],
+          mapTypeId: mapMode === "satellite" ? "hybrid" : "roadmap",
           disableDefaultUI: true,
           zoomControl: true,
           gestureHandling: "greedy",
@@ -255,14 +260,14 @@ export default function MapPickerContainer({
 
         mapInstanceRef.current = map;
         markerInstanceRef.current = marker;
-        setIsGoogleMapsLoaded(true);
+        setIsGoogleApiLoaded(true);
       } catch {
-        setIsGoogleMapsLoaded(false);
+        setIsGoogleApiLoaded(false);
       }
     }
-  }, [lat, lng, updateLocation]);
+  }, [lat, lng, mapMode, zoomLevel, updateLocation]);
 
-  // Manejador seguro de geolocalización del navegador con timeout estricto de 4s (NUNCA SE QUEDA TRABADO)
+  // Manejador seguro de GPS con timeout de 4 segundos (protección total contra trabas)
   const handleUseCurrentLocation = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
       notifyStatus("Geolocalización no soportada en este navegador.");
@@ -270,7 +275,7 @@ export default function MapPickerContainer({
     }
 
     setIsLocating(true);
-    notifyStatus("Obteniendo tu ubicación GPS...");
+    notifyStatus("Obteniendo señal GPS de tu casa...");
 
     let hasResponded = false;
 
@@ -278,7 +283,7 @@ export default function MapPickerContainer({
       if (!hasResponded) {
         hasResponded = true;
         setIsLocating(false);
-        notifyStatus("La ubicación tardó demasiado. Usando posición predeterminada.");
+        notifyStatus("Señal GPS demorada. Podés elegir la dirección en la lista o buscador.");
       }
     }, 4000);
 
@@ -293,7 +298,7 @@ export default function MapPickerContainer({
         setActivePreset("");
         updateLocation(newLat, newLng);
         setIsLocating(false);
-        notifyStatus("Ubicación GPS obtenida exitosamente.");
+        notifyStatus("¡Ubicación GPS obtenida correctamente!");
       },
       (error) => {
         if (hasResponded) return;
@@ -302,9 +307,9 @@ export default function MapPickerContainer({
         setIsLocating(false);
 
         if (error.code === error.PERMISSION_DENIED) {
-          notifyStatus("Permiso de ubicación denegado. Seleccioná en el mapa o lista.");
+          notifyStatus("Permiso GPS denegado. Escribí tu dirección o seleccioná en la lista.");
         } else {
-          notifyStatus("No se pudo obtener señal GPS. Podés elegir en el mapa.");
+          notifyStatus("No se pudo obtener señal GPS. Escribí tu dirección abajo.");
         }
       },
       {
@@ -318,10 +323,11 @@ export default function MapPickerContainer({
   // Selección de barrio preset rápido
   const handleSelectPreset = (preset: (typeof NEIGHBORHOOD_PRESETS)[0]) => {
     setActivePreset(preset.name);
+    setSearchQuery(preset.address);
     updateLocation(preset.lat, preset.lng, preset.address);
   };
 
-  // Búsqueda por texto en barra de búsqueda
+  // Búsqueda por texto en barra de dirección
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
@@ -334,30 +340,34 @@ export default function MapPickerContainer({
     if (matchedPreset) {
       handleSelectPreset(matchedPreset);
     } else {
-      // Usar texto buscado directamente sin trabar la interfaz
-      const customAddr = `${searchQuery.trim()}, Buenos Aires`;
+      const customAddr = searchQuery.trim();
       setAddress(customAddr);
       onLocationChange(lat, lng, customAddr);
-      notifyStatus(`Ubicación fijada en: ${searchQuery}`);
+      notifyStatus(`Ubicación actualizada: ${customAddr}`);
     }
   };
 
+  // Generación de URL estandarizada de Google Maps Embed para Previsualización Real
+  const googleMapsEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(
+    address || `${lat},${lng}`
+  )}&t=${mapMode === "satellite" ? "k" : "m"}&z=${zoomLevel}&ie=UTF8&iwloc=&output=embed`;
+
   return (
     <div className="space-y-4 w-full">
-      {/* Encabezado y Botón GPS */}
+      {/* Encabezado Principal y Botón GPS */}
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1 text-[11px] font-mono tracking-wider uppercase text-[#C4B5FD] font-semibold px-2.5 py-0.5 rounded-full bg-[#7C5CFF]/15 border border-[#7C5CFF]/30">
               <Sparkles className="size-3 text-[#A8FF35]" />
-              Google Maps Styled
+              Previsualización Google Maps Real
             </span>
           </div>
           <h3 className="text-[20px] font-extrabold text-[#F4F3F7] tracking-tight">
-            ¿Dónde necesitás el servicio?
+            ¿Dónde es el trabajo?
           </h3>
           <p className="text-xs text-zinc-400 font-medium mt-0.5">
-            Tocá en el mapa, usá tu GPS o seleccioná tu zona habitual
+            Comprobá la ubicación exacta de tu casa en el mapa de Google
           </p>
         </div>
 
@@ -368,17 +378,71 @@ export default function MapPickerContainer({
           className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-b from-white/14 to-white/[0.05] backdrop-blur-md border border-white/18 text-xs font-bold text-[#F4F3F7] shadow-lg shrink-0 hover:bg-white/20 active:scale-95 transition cursor-pointer"
         >
           <Navigation className={`size-4 text-[#A8FF35] ${isLocating ? "animate-spin" : ""}`} />
-          <span>{isLocating ? "Buscando GPS..." : "Mi ubicación"}</span>
+          <span>{isLocating ? "Obteniendo..." : "Mi ubicación"}</span>
         </button>
       </div>
 
-      {/* Banner de Estado / Notificación Flotante */}
+      {/* Banner de Notificación Flotante */}
       {statusMessage && (
         <div className="rounded-xl border border-[#7C5CFF]/40 bg-[#7C5CFF]/12 backdrop-blur-md px-3.5 py-2 text-xs font-semibold text-[#D8B4FE] animate-in fade-in duration-200 flex items-center gap-2 shadow-md">
           <span className="size-1.5 rounded-full bg-[#A8FF35] animate-pulse shrink-0" />
           <span>{statusMessage}</span>
         </div>
       )}
+
+      {/* Selector de Modo de Mapa (Callejero Dark vs Satélite Real HD) y Controles de Zoom */}
+      <div className="flex items-center justify-between gap-2 bg-white/4 p-1.5 rounded-2xl border border-white/10">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setMapMode("street")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+              mapMode === "street"
+                ? "bg-[#7C5CFF] text-white shadow-md"
+                : "bg-transparent text-zinc-400 hover:text-white"
+            }`}
+          >
+            <Eye className="size-3.5" />
+            <span>Callejero Dark</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMapMode("satellite")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+              mapMode === "satellite"
+                ? "bg-[#7C5CFF] text-white shadow-md"
+                : "bg-transparent text-zinc-400 hover:text-white"
+            }`}
+          >
+            <Layers className="size-3.5" />
+            <span>Satélite Real HD</span>
+          </button>
+        </div>
+
+        {/* Controles de Zoom para Previsualización */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setZoomLevel((z) => Math.min(z + 1, 19))}
+            className="size-7 rounded-lg bg-white/8 hover:bg-white/16 flex items-center justify-center text-white transition cursor-pointer"
+            title="Acercar"
+          >
+            <Plus className="size-3.5" />
+          </button>
+          <span className="text-[10px] font-mono font-bold text-zinc-400 px-1">
+            z{zoomLevel}
+          </span>
+          <button
+            type="button"
+            onClick={() => setZoomLevel((z) => Math.max(z - 1, 12))}
+            className="size-7 rounded-lg bg-white/8 hover:bg-white/16 flex items-center justify-center text-white transition cursor-pointer"
+            title="Alejar"
+          >
+            <Minus className="size-3.5" />
+          </button>
+        </div>
+      </div>
 
       {/* Barra de Búsqueda de Ubicación */}
       <form onSubmit={handleSearchSubmit} className="relative w-full">
@@ -388,19 +452,19 @@ export default function MapPickerContainer({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar barrio o calle (ej: Palermo, Recoleta, Cabildo 2000)..."
+            placeholder="Escribí tu calle y altura (ej: Thames 1842, Palermo)..."
             className="w-full h-11 pl-10 pr-24 rounded-xl border border-white/12 bg-white/5 text-xs text-[#F4F3F7] placeholder-zinc-500 focus:outline-none focus:border-[#7C5CFF] focus:ring-1 focus:ring-[#7C5CFF] transition"
           />
           <button
             type="submit"
             className="absolute right-1.5 px-3 py-1.5 rounded-lg bg-[#7C5CFF] hover:bg-[#6b47ff] text-[11px] font-bold text-white transition cursor-pointer"
           >
-            Buscar
+            Ver en mapa
           </button>
         </div>
       </form>
 
-      {/* Presets Rápidos de Barrios / Zonas */}
+      {/* Presets Rápidos de Zonas Frecuentes */}
       <div className="space-y-1.5">
         <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">
           Zonas Frecuentes
@@ -427,70 +491,50 @@ export default function MapPickerContainer({
         </div>
       </div>
 
-      {/* Google Maps Container Component / Styled Interactive Map Canvas */}
-      <div className="relative h-72 w-full overflow-hidden rounded-[24px] border border-white/14 shadow-2xl bg-[#0d0d12]">
-        {/* Contenedor DOM para la instancia de Google Maps */}
-        <div ref={googleMapRef} className="h-full w-full" />
-
-        {/* Fallback Interactive Visual Styling Canvas cuando Google Maps API Key no se ha inyectado en ENV */}
-        {!isGoogleMapsLoaded && (
-          <div
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const clickX = e.clientX - rect.left;
-              const clickY = e.clientY - rect.top;
-              // Mapeo dinámico de coordenadas en el lienzo interactivo
-              const offsetLat = ((clickY - rect.height / 2) / rect.height) * -0.04;
-              const offsetLng = ((clickX - rect.width / 2) / rect.width) * 0.04;
-              const newLat = lat + offsetLat;
-              const newLng = lng + offsetLng;
-              updateLocation(newLat, newLng);
-            }}
-            className="absolute inset-0 z-10 cursor-crosshair flex flex-col items-center justify-center p-4 bg-gradient-to-b from-[#11111a] via-[#0d0d14] to-[#09090d]"
-          >
-            {/* Grid de Fondo de Estilo Mapa Oscuro de Google Maps */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(#7C5CFF_1px,transparent_1px)] [background-size:20px_20px]" />
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f1f2e_1px,transparent_1px),linear-gradient(to_bottom,#1f1f2e_1px,transparent_1px)] bg-[size:40px_40px] opacity-25" />
-
-            {/* Líneas de Calles Simuladas en Modo Oscuro */}
-            <div className="absolute inset-x-0 top-1/3 h-2 bg-[#332a68]/40 border-y border-[#7C5CFF]/20" />
-            <div className="absolute inset-x-0 top-2/3 h-1.5 bg-[#20202e]/60" />
-            <div className="absolute inset-y-0 left-1/3 w-2 bg-[#332a68]/40 border-x border-[#7C5CFF]/20" />
-            <div className="absolute inset-y-0 left-2/3 w-1.5 bg-[#20202e]/60" />
-
-            {/* Pin de Ubicación en Estilo Neón Google Dark */}
-            <div className="relative z-20 flex flex-col items-center animate-bounce">
-              <div className="flex items-center justify-center size-12 rounded-full bg-[#7C5CFF] text-white shadow-[0_0_30px_#7C5CFF] border-2 border-[#A8FF35]">
-                <MapPin className="size-6 text-white" />
-              </div>
-              <div className="w-3 h-1.5 bg-[#A8FF35] rounded-full blur-[2px] mt-1" />
-            </div>
-
-            {/* Chip de Coordenadas Flotantes */}
-            <div className="mt-4 z-20 rounded-xl bg-[#08080A]/90 backdrop-blur-md px-4 py-2 text-xs font-semibold text-[#F4F3F7] shadow-xl border border-white/15 flex items-center gap-2">
-              <span className="size-2 rounded-full bg-[#A8FF35] animate-ping" />
-              <span>
-                Lat: {lat.toFixed(4)}, Lng: {lng.toFixed(4)}
-              </span>
-            </div>
+      {/* CONTENEDOR DE PREVISUALIZACIÓN REAL EN GOOGLE MAPS */}
+      <div className="relative h-72 w-full overflow-hidden rounded-[24px] border border-white/16 shadow-2xl bg-[#0d0d12]">
+        {/* Instancia de Google Maps JS API (si existe API key) */}
+        {isGoogleApiLoaded ? (
+          <div ref={googleMapRef} className="h-full w-full" />
+        ) : (
+          /* Previsualizador Google Maps Embed Real con Filtro Oscuro / Satelital HD */
+          <div className="relative h-full w-full overflow-hidden">
+            <iframe
+              title="Google Maps Location Preview"
+              src={googleMapsEmbedUrl}
+              width="100%"
+              height="100%"
+              style={{
+                border: 0,
+                filter:
+                  mapMode === "street"
+                    ? "invert(90%) hue-rotate(180deg) contrast(1.15) saturate(1.2)"
+                    : "contrast(1.08) brightness(0.95)",
+              }}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="h-full w-full pointer-events-auto"
+            />
           </div>
         )}
 
-        {/* Chip Flotante Informativo sobre el Mapa */}
-        <div className="absolute top-3 left-3 z-[20] rounded-xl bg-[#08080A]/85 backdrop-blur-md px-3.5 py-1.5 text-[11px] font-semibold text-[#F4F3F7] shadow-md border border-white/12 flex items-center gap-2 pointer-events-none">
-          <MapPin className="size-3.5 text-[#A8FF35]" />
-          <span>Tocá en cualquier punto para mover el pin</span>
+        {/* Pin indicador Neón centrado sobre el mapa de Google */}
+        <div className="absolute top-3 right-3 z-[20] rounded-xl bg-[#08080A]/90 backdrop-blur-md px-3.5 py-2 text-[11px] font-semibold text-[#F4F3F7] shadow-xl border border-white/15 flex items-center gap-2">
+          <MapPin className="size-4 text-[#A8FF35]" />
+          <span>
+            {mapMode === "satellite" ? "Vista Satelital Google HD" : "Vista Google Maps Dark"}
+          </span>
         </div>
       </div>
 
-      {/* Campo de Dirección Seleccionada */}
+      {/* Campo de Confirmación de Dirección Seleccionada */}
       <div className="space-y-1.5">
         <label className="block text-[10.5px] font-mono tracking-wider uppercase text-zinc-400 font-semibold">
-          Dirección confirmada para la visita
+          Dirección donde recibirás al profesional
         </label>
         <div className="flex items-center gap-3 rounded-[18px] border border-white/12 bg-white/6 p-3.5 shadow-md focus-within:border-[#7C5CFF] focus-within:ring-1 focus-within:ring-[#7C5CFF] transition">
-          <div className="size-8 rounded-lg bg-[#7C5CFF]/15 text-[#8B6BFF] flex items-center justify-center shrink-0">
-            <MapPin className="size-4" />
+          <div className="size-8 rounded-lg bg-[#7C5CFF]/15 text-[#8B6BFF] flex items-center justify-center shrink-0 font-bold">
+            <MapPin className="size-4 text-[#A8FF35]" />
           </div>
           <input
             type="text"
