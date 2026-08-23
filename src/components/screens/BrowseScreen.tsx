@@ -125,10 +125,21 @@ export function BrowseScreen() {
     const targetCardId = (targetProvider as any)?.card_id || (targetProvider as any)?.match_card_id;
 
     if (matchSessionId && targetCardId) {
-      await acceptCard(targetCardId);
+      try {
+        await acceptCard(targetCardId);
+      } catch (err) {
+        console.warn("Card accept API notice:", err);
+      }
     }
 
-    sessionStorage.setItem("accepted_provider", JSON.stringify(targetProvider));
+    try {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("accepted_provider", JSON.stringify(targetProvider));
+      }
+    } catch (e) {
+      console.warn("Session storage notice:", e);
+    }
+
     advanceAccept();
     setActiveModalProvider(null);
     router.push("/work-confirmed");

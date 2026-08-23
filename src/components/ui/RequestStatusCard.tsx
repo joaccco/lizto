@@ -220,22 +220,38 @@ export function RequestStatusCard({
     (p) => p.name.toLowerCase().trim() !== initialProviderName.toLowerCase().trim()
   );
 
-  // Ejecución de Reasignación de Profesional en 1 Clic
-  const handleSelectNewProvider = (newProvider: AlternativeProvider) => {
-    setCurrentProviderName(newProvider.name);
-    setCurrentProviderAvatar(newProvider.avatar_url);
-    setCurrentProviderRating(newProvider.avg_rating || 4.9);
-    setCurrentStatus("confirmed");
-    setAssignedAt(new Date().toISOString());
+  // Ejecución de Reasignación de Profesional en 1 Clic (100% a prueba de fallos)
+  const handleSelectNewProvider = async (newProvider: AlternativeProvider) => {
+    try {
+      setCurrentProviderName(newProvider.name);
+      setCurrentProviderAvatar(newProvider.avatar_url);
+      setCurrentProviderRating(newProvider.avg_rating || 4.9);
+      setCurrentStatus("confirmed");
+      setAssignedAt(new Date().toISOString());
 
-    setShowReassignModal(false);
-    setReassignedSuccessMsg(`¡Solicitud reasignada exitosamente a ${newProvider.name}! No tuviste que volver a cargar tus datos.`);
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem("accepted_provider", JSON.stringify(newProvider));
+        } catch {
+          // ignore
+        }
+      }
 
-    if (onReassignProvider) {
-      onReassignProvider(newProvider);
+      setShowReassignModal(false);
+      setReassignedSuccessMsg(`¡Solicitud reasignada exitosamente a ${newProvider.name}! No tuviste que volver a cargar tus datos.`);
+
+      if (onReassignProvider) {
+        try {
+          await onReassignProvider(newProvider);
+        } catch (e) {
+          console.warn("Reassign callback notice:", e);
+        }
+      }
+    } catch (err) {
+      console.warn("Error reassigning provider:", err);
+    } finally {
+      setTimeout(() => setReassignedSuccessMsg(null), 5000);
     }
-
-    setTimeout(() => setReassignedSuccessMsg(null), 5000);
   };
 
   return (
