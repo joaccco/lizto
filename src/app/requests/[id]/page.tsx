@@ -20,6 +20,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ScreenShell } from "@/components/screens/shared/ScreenShell";
+import { RequestStatusCard } from "@/components/ui/RequestStatusCard";
 import { useToast } from "@/components/ui/Toast";
 import { apiFetch } from "@/lib/api";
 import { ENDPOINTS } from "@/lib/endpoints";
@@ -206,137 +207,22 @@ export default function RequestDetailPage() {
         <span className="text-[10.5px] font-mono tracking-widest uppercase text-zinc-400 font-semibold">
           Detalle del pedido
         </span>
+        {/* Componente de Estado de Solicitud y Línea de Tiempo Detallada */}
+      <div className="relative z-10">
+        <RequestStatusCard
+          id={requestDetail.id}
+          categoryName={requestDetail.category?.name || "Servicio General"}
+          rawPrompt={requestDetail.raw_prompt}
+          address={requestDetail.address || "Acceso Av Independencia, Barrio Jose Maria Ponce, Comisaría Seccional 18"}
+          status={requestDetail.status}
+          createdAt={requestDetail.created_at}
+          providerName={requestDetail.accepted_provider?.name || "Roberto Medina"}
+          providerAvatar={requestDetail.accepted_provider?.avatar_url}
+          providerRating={requestDetail.accepted_provider?.avg_rating || 4.9}
+          onOpenChat={() => router.push(`/conversations/${conversationId}`)}
+          onRate={() => router.push(`/rate/${requestDetail.accepted_provider?.uuid || requestDetail.id}`)}
+        />
       </div>
-
-      {/* Header Categoría + Estado Badge */}
-      <div className="relative z-10 rounded-[24px] bg-[#131318] border border-white/9 p-6 space-y-4 shadow-xl">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-[26px] leading-snug font-extrabold text-[#F4F3F7]">
-              {requestDetail.category?.name || "Servicio General"}
-            </h1>
-            <p className="text-[11.5px] font-mono text-zinc-500 mt-0.5">
-              ID: {requestDetail.id.substring(0, 8)}
-            </p>
-          </div>
-          <span
-            className={`rounded-full px-3.5 py-1 text-xs font-semibold border ${statusInfo.className}`}
-          >
-            {statusInfo.label}
-          </span>
-        </div>
-
-        {/* Prompt original */}
-        <div className="space-y-1 pt-3 border-t border-white/7">
-          <span className="text-[10.5px] font-mono uppercase tracking-wider text-[#A78BFA] font-medium">
-            Tu mensaje
-          </span>
-          <p className="text-sm text-zinc-300 leading-relaxed italic">
-            "{requestDetail.raw_prompt}"
-          </p>
-        </div>
-
-        {/* Dirección del trabajo */}
-        <div className="flex items-center gap-2 pt-1 text-xs text-zinc-300">
-          <MapPin className="size-4 text-[#8B6BFF] shrink-0" />
-          <span className="font-medium">{requestDetail.address || "Córdoba 456, Corrientes"}</span>
-        </div>
-
-        {/* Tarjeta del Profesional Asignado con opción de ver Perfil y Chatear */}
-        {provider && (
-          <div className="space-y-3 pt-2">
-            <div
-              onClick={() => setShowProviderModal(true)}
-              className="rounded-[20px] bg-gradient-to-b from-white/8 to-white/3 border border-white/12 p-4 flex items-center justify-between cursor-pointer hover:border-[#8B6BFF]/50 transition group shadow-md"
-            >
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className="relative size-12 shrink-0 rounded-full bg-[#1D1D25] border border-white/12 flex items-center justify-center">
-                  {!imageError && provider.avatar_url ? (
-                    <Image
-                      src={provider.avatar_url}
-                      alt={provider.name}
-                      fill
-                      sizes="48px"
-                      className="object-cover rounded-full"
-                      onError={() => setImageError(true)}
-                    />
-                  ) : (
-                    <span className="text-xs font-bold text-zinc-300">{initials}</span>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <h4 className="text-base font-bold text-[#F4F3F7] truncate group-hover:text-[#C4B5FD] transition">
-                      {provider.name}
-                    </h4>
-                    {provider.is_verified !== false && (
-                      <span className="size-3.5 rounded-full bg-[#3DDC84]/16 border border-[#3DDC84]/45 text-[#3DDC84] font-bold text-[9px] flex items-center justify-center shrink-0">
-                        ✓
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-400 flex items-center gap-1 font-medium">
-                    <span>★ {provider.avg_rating?.toFixed(1) || "4.9"}</span>
-                    <span>·</span>
-                    <span>Toca para ver perfil completo</span>
-                  </p>
-                </div>
-              </div>
-              <ShieldCheck className="size-5 text-[#8B6BFF] shrink-0" />
-            </div>
-
-            {/* BOTÓN DE CHAT O BOTÓN DE CALIFICAR SI ESTÁ COMPLETADO */}
-            {requestDetail.status === "completed" ? (
-              <button
-                type="button"
-                onClick={() => router.push(`/rate/${requestDetail.accepted_provider?.uuid || requestDetail.id}`)}
-                className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#F2B441] hover:bg-[#e0a230] text-sm font-extrabold text-zinc-950 shadow-[0_12px_32px_rgba(242,180,65,0.4)] transition cursor-pointer"
-              >
-                <Star className="size-5 fill-zinc-950 text-zinc-950" />
-                <span>★ Calificar servicio de {providerName}</span>
-              </button>
-            ) : requestDetail.status !== "cancelled" ? (
-              <button
-                type="button"
-                onClick={() => router.push(`/conversations/${conversationId}`)}
-                className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-sm font-bold text-white shadow-[0_12px_32px_rgba(124,92,255,0.4)] transition cursor-pointer"
-              >
-                <MessageSquare className="size-4" />
-                <span>Abrir Chat con {providerName}</span>
-              </button>
-            ) : (
-              <div className="flex h-[44px] w-full items-center justify-center gap-2 rounded-[14px] bg-white/4 border border-white/8 text-xs font-semibold text-zinc-400 font-mono">
-                <span>Chat finalizado (Trabajo cancelado)</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Línea de tiempo de eventos */}
-      <div className="relative z-10 space-y-3">
-        <h3 className="text-[10.5px] font-mono tracking-widest uppercase text-zinc-500 font-semibold">
-          Línea de tiempo
-        </h3>
-        <div className="rounded-[24px] bg-[#131318] border border-white/9 p-5 space-y-4 shadow-xl">
-          <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-white/10">
-            <div className="relative">
-              <div className="absolute -left-6 top-0.5 size-4 rounded-full bg-[#3DDC84] ring-4 ring-[#131318]" />
-              <h4 className="text-sm font-bold text-[#F4F3F7]">Solicitud creada</h4>
-              <p className="text-xs text-zinc-400">Recibimos tu pedido en el sistema</p>
-            </div>
-            <div className="relative">
-              <div className="absolute -left-6 top-0.5 size-4 rounded-full bg-[#3DDC84] ring-4 ring-[#131318]" />
-              <h4 className="text-sm font-bold text-[#F4F3F7]">Profesional asignado</h4>
-              <p className="text-xs text-zinc-400">{providerName} aceptó el pedido</p>
-            </div>
-            <div className="relative">
-              <div className="absolute -left-6 top-0.5 size-4 rounded-full bg-[#8B6BFF] ring-4 ring-[#131318] animate-pulse" />
-              <h4 className="text-sm font-bold text-[#C4B5FD]">En proceso de atención</h4>
-              <p className="text-xs text-zinc-400">El profesional está coordinando la atención</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Botón Cancelar si está activo */}
