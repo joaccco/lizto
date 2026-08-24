@@ -145,9 +145,18 @@ export function ProviderIncomingRequestModal() {
   const handleAccept = async () => {
     if (!request) return;
     setIsProcessing(true);
-    markAsDismissed(request.id, request.work_id);
-    setIsOpen(false);
-    setIsProcessing(false);
+    try {
+      await apiFetch(ENDPOINTS.WORK_CONFIRM(request.id), { method: "POST" });
+    } catch {
+      // ignore
+    } finally {
+      markAsDismissed(request.id, request.work_id);
+      setIsOpen(false);
+      setIsProcessing(false);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("provider-data-updated"));
+      }
+    }
   };
 
   const handleDecline = async () => {

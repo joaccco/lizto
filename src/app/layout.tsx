@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: "Contratá profesionales verificados para lo que necesitás resolver.",
 };
 
+import { ProviderIncomingRequestModal } from "@/components/layout/ProviderIncomingRequestModal";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,6 +33,7 @@ export default function RootLayout({
           <ToastProvider>
             <AuthProvider>
               <main className="pb-24 flex-1">{children}</main>
+              <ProviderIncomingRequestModal />
               <ConditionalBottomNav />
             </AuthProvider>
           </ToastProvider>

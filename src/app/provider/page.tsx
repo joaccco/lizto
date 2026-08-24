@@ -57,28 +57,24 @@ interface WorkRequestItem {
   location?: string;
   status: string;
   created_at?: string;
+  schedule?: {
+    scheduled_date: string | null;
+    window_start: string | null;
+    window_end: string | null;
+    label: string;
+  };
 }
 
-// Formateador cronológico para solicitudes de profesionales
-function formatProviderRequestTime(dateStr?: string, index: number = 0): { relative: string; full: string; isRecent: boolean } {
+// Formateador de tiempo relativo de recepción para profesionales (sin fechas absolutas ni valores hardcodeados)
+function formatProviderRequestTime(dateStr?: string): { relative: string; isRecent: boolean } {
   if (!dateStr) {
-    const minutesAgo = (index + 1) * 7;
-    return {
-      relative: minutesAgo < 60 ? `Hace ${minutesAgo} min` : `Hoy, 20:${(15 + index * 5).toString().padStart(2, "0")} hs`,
-      full: `23 Ago 2026, 20:${(15 + index * 5).toString().padStart(2, "0")} hs`,
-      isRecent: minutesAgo < 30,
-    };
+    return { relative: "Llegó hace instantes", isRecent: true };
   }
 
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) {
-      const minutesAgo = (index + 1) * 7;
-      return {
-        relative: `Hace ${minutesAgo} min`,
-        full: `23 Ago 2026, 20:15 hs`,
-        isRecent: true,
-      };
+      return { relative: "Llegó hace instantes", isRecent: true };
     }
 
     const now = new Date();
@@ -86,19 +82,13 @@ function formatProviderRequestTime(dateStr?: string, index: number = 0): { relat
     const diffMins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
     const diffHours = Math.floor(diffMins / 60);
 
-    const day = d.getDate();
-    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    const month = months[d.getMonth()];
-    const hours = d.getHours().toString().padStart(2, "0");
-    const mins = d.getMinutes().toString().padStart(2, "0");
-    const full = `${day} ${month}, ${hours}:${mins} hs`;
+    if (diffMins < 60) return { relative: `Llegó hace ${diffMins} min`, isRecent: diffMins < 30 };
+    if (diffHours < 24) return { relative: `Llegó hace ${diffHours} h`, isRecent: false };
 
-    if (diffMins < 60) return { relative: `Hace ${diffMins} min`, full, isRecent: diffMins < 30 };
-    if (diffHours < 24) return { relative: `Hoy, ${hours}:${mins} hs`, full, isRecent: false };
-
-    return { relative: `${day} ${month}, ${hours}:${mins} hs`, full, isRecent: false };
+    const days = Math.floor(diffHours / 24);
+    return { relative: `Llegó hace ${days} d`, isRecent: false };
   } catch {
-    return { relative: "Hace 5 min", full: "23 Ago 2026, 20:15 hs", isRecent: true };
+    return { relative: "Llegó hace instantes", isRecent: true };
   }
 }
 
@@ -543,16 +533,18 @@ export default function ProviderPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {sortedWorkRequests.map((req, idx) => {
+                  {sortedWorkRequests.map((req) => {
                     const Icon = categoryIcons[req.category_slug || "general"] || Grid2x2;
-                    const timeInfo = formatProviderRequestTime(req.created_at, idx);
+                    const timeInfo = formatProviderRequestTime(req.created_at);
+                    const assistanceLabel = req.schedule?.label || (req.urgency === "immediate" ? "Atención inmediata" : "A coordinar");
+                    const isImmediate = req.urgency === "immediate";
 
                     return (
                       <div
                         key={req.id}
                         className="rounded-[24px] bg-[#131318] border border-white/9 p-5 space-y-4 shadow-sm hover:border-[#8B6BFF]/50 transition"
                       >
-                        {/* Fila superior con Cliente, Rubro y Badge de Horario Cronológico */}
+                        {/* Fila superior: Cliente, Rubro y Cuándo Llegó (Tratamiento Secundario) */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-[#7C5CFF]/12 border border-[#7C5CFF]/30 text-[#C4B5FD]">
@@ -560,21 +552,14 @@ export default function ProviderPage() {
                             </div>
                             <div className="min-w-0">
                               <h4 className="text-sm font-bold text-[#F4F3F7] truncate">{req.client_name}</h4>
-                              <p className="text-xs text-zinc-400 truncate">{req.category}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-zinc-400 truncate">{req.category}</span>
+                                <span className="text-[11px] font-mono text-zinc-400">· {timeInfo.relative}</span>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            {/* Timestamp badge cronológico */}
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-mono font-bold border ${
-                              timeInfo.isRecent
-                                ? "bg-[#3DDC84]/15 text-[#3DDC84] border-[#3DDC84]/40"
-                                : "bg-white/6 text-zinc-300 border-white/12"
-                            }`}>
-                              <Clock className={`size-3 ${timeInfo.isRecent ? "text-[#3DDC84] animate-pulse" : "text-zinc-400"}`} />
-                              <span>{timeInfo.relative}</span>
-                            </span>
-
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <span className="rounded-full bg-[#FF5A5A]/14 px-2.5 py-1 text-[10px] font-mono font-bold text-[#FF5A5A] border border-[#FF5A5A]/40 uppercase">
                               Urgente
                             </span>
@@ -586,13 +571,29 @@ export default function ProviderPage() {
                           "{req.raw_prompt}"
                         </p>
 
-                        {/* Dirección y Fecha Completa */}
+                        {/* JERARQUÍA TEMPORAL PRIMARIA: Cuándo Debe Asistir (Alto Contraste) */}
+                        <div className={`flex items-center gap-2.5 p-3.5 rounded-xl border text-xs font-bold ${
+                          isImmediate
+                            ? "bg-[#FF5A5A]/14 border-[#FF5A5A]/45 text-[#FF5A5A]"
+                            : "bg-[#7C5CFF]/14 border-[#7C5CFF]/35 text-[#C4B5FD]"
+                        }`}>
+                          <Clock className="size-4 shrink-0 text-[#A8FF35]" />
+                          <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                            <span className="text-[10px] uppercase tracking-wider font-mono text-zinc-400 font-semibold shrink-0">
+                              Cuándo asistir:
+                            </span>
+                            <span className="font-extrabold text-xs text-white truncate text-right">
+                              {assistanceLabel}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Ubicación */}
                         <div className="flex items-center justify-between text-xs text-zinc-400 border-t border-white/7 pt-3">
                           <div className="flex items-center gap-1.5 font-medium text-zinc-300 truncate">
                             <MapPin className="size-3.5 text-[#8B6BFF] shrink-0" />
                             <span className="truncate">{req.location || "Barrio Centro, Corrientes"}</span>
                           </div>
-                          <span className="text-[10px] font-mono text-zinc-500 shrink-0">{timeInfo.full}</span>
                         </div>
 
                         {/* Botones de Acción Aceptar / Declinar */}
