@@ -179,15 +179,31 @@ export default function RequestDetailPage() {
     className: "bg-white/5 border-white/10 text-zinc-400",
   };
 
-  const provider = requestDetail.accepted_provider;
-  const providerName = provider?.name || "Roberto Medina";
-  const initials = providerName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .substring(0, 2)
-    .toUpperCase();
+  // Cargar profesional aceptado de la API o del sessionStorage de la sesión del usuario
+  const storedProviderJson = typeof window !== "undefined" ? sessionStorage.getItem("accepted_provider") : null;
+  let storedProviderObj: ProviderInfo | undefined = undefined;
+  if (storedProviderJson) {
+    try {
+      const p = JSON.parse(storedProviderJson);
+      if (p && p.name) {
+        storedProviderObj = {
+          name: p.name,
+          avatar_url: p.avatar_url || p.photo,
+          bio: p.bio || p.description || "Profesional verificado de Lizto.",
+          avg_rating: p.avg_rating || p.rating || 4.9,
+          total_reviews: p.total_reviews || p.reviewCount || 87,
+          total_jobs_completed: p.total_jobs_completed || p.jobsCompleted || 124,
+          is_verified: p.is_verified ?? true,
+          specialties: p.specialties || ["Servicios"],
+        };
+      }
+    } catch {
+      // ignore
+    }
+  }
 
+  const activeProvider = requestDetail.accepted_provider || storedProviderObj;
+  const providerName = activeProvider?.name || "Carlos Gómez";
   const conversationId = requestDetail.conversation_id || "bc868afe-8537-4926-8070-0530a5234418";
 
   return (
@@ -207,7 +223,9 @@ export default function RequestDetailPage() {
         <span className="text-[10.5px] font-mono tracking-widest uppercase text-zinc-400 font-semibold">
           Detalle del pedido
         </span>
-        {/* Componente de Estado de Solicitud y Línea de Tiempo Detallada */}
+      </div>
+
+      {/* Componente de Estado de Solicitud y Línea de Tiempo Detallada con Profesional Seleccionado Real */}
       <div className="relative z-10">
         <RequestStatusCard
           id={requestDetail.id}
@@ -216,13 +234,12 @@ export default function RequestDetailPage() {
           address={requestDetail.address || "Acceso Av Independencia, Barrio Jose Maria Ponce, Comisaría Seccional 18"}
           status={requestDetail.status}
           createdAt={requestDetail.created_at}
-          providerName={requestDetail.accepted_provider?.name || "Roberto Medina"}
-          providerAvatar={requestDetail.accepted_provider?.avatar_url}
-          providerRating={requestDetail.accepted_provider?.avg_rating || 4.9}
+          providerName={providerName}
+          providerAvatar={activeProvider?.avatar_url}
+          providerRating={activeProvider?.avg_rating || 4.9}
           onOpenChat={() => router.push(`/conversations/${conversationId}`)}
-          onRate={() => router.push(`/rate/${requestDetail.accepted_provider?.uuid || requestDetail.id}`)}
+          onRate={() => router.push(`/rate/${activeProvider?.uuid || requestDetail.id}`)}
         />
-      </div>
       </div>
 
       {/* Botón Cancelar si está activo */}
@@ -240,44 +257,43 @@ export default function RequestDetailPage() {
       )}
 
       {/* MODAL: PERFIL COMPLETO DEL TRABAJADOR */}
-      {showProviderModal && provider && (
+      {showProviderModal && activeProvider && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-md rounded-[28px] bg-[#131318] border border-white/14 p-6 space-y-5 text-[#F4F3F7] shadow-2xl relative overflow-hidden">
             {/* Header Modal */}
             <div className="flex items-start justify-between border-b border-white/8 pb-4">
               <div className="flex items-center gap-3.5">
-                <div className="relative size-14 shrink-0 rounded-full bg-[#1D1D25] border border-white/15 flex items-center justify-center">
-                  {!imageError && provider.avatar_url ? (
+                <div className="relative size-14 shrink-0 rounded-full bg-[#1D1D25] border border-white/15 flex items-center justify-center font-bold text-sm text-zinc-300 overflow-hidden">
+                  {!imageError && activeProvider.avatar_url ? (
                     <Image
-                      src={provider.avatar_url}
-                      alt={provider.name}
+                      src={activeProvider.avatar_url}
+                      alt={activeProvider.name}
                       fill
+                      unoptimized
                       sizes="56px"
                       className="object-cover rounded-full"
                       onError={() => setImageError(true)}
                     />
                   ) : (
-                    <span className="text-sm font-bold text-zinc-300">{initials}</span>
+                    <span>
+                      {activeProvider.name.split(" ").map((n) => n[0]).join("").substring(0, 2)}
+                    </span>
                   )}
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-lg font-bold text-[#F4F3F7]">{provider.name}</h3>
-                    {provider.is_verified !== false && (
-                      <span className="size-4 rounded-full bg-[#3DDC84]/16 border border-[#3DDC84]/45 text-[#3DDC84] font-bold text-[10px] flex items-center justify-center">
-                        ✓
-                      </span>
-                    )}
+                    <h3 className="text-lg font-bold text-[#F4F3F7]">{activeProvider.name}</h3>
+                    <ShieldCheck className="size-4 text-[#3DDC84]" />
                   </div>
-                  <p className="text-xs text-[#C4B5FD] font-semibold">
-                    {requestDetail.category?.name || "Profesional verificado"}
+                  <p className="text-xs text-zinc-400 font-medium">
+                    ★ {activeProvider.avg_rating?.toFixed(1) || "4.9"} · {activeProvider.total_jobs_completed || 120} trabajos completados
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowProviderModal(false)}
-                className="size-8 rounded-full bg-white/5 text-zinc-400 hover:text-white flex items-center justify-center text-xs"
+                className="size-8 rounded-full bg-white/6 text-zinc-400 hover:text-white flex items-center justify-center text-xs transition"
               >
                 ✕
               </button>
@@ -288,19 +304,19 @@ export default function RequestDetailPage() {
               <div>
                 <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Rating</div>
                 <div className="text-sm font-extrabold text-[#F2B441] mt-0.5">
-                  ★ {provider.avg_rating?.toFixed(1) || "4.9"}
+                  ★ {activeProvider.avg_rating?.toFixed(1) || "4.9"}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Reseñas</div>
                 <div className="text-sm font-extrabold text-[#F4F3F7] mt-0.5">
-                  {provider.total_reviews || 87}
+                  {activeProvider.total_reviews || 87}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Trabajos</div>
                 <div className="text-sm font-extrabold text-[#3DDC84] mt-0.5">
-                  {provider.total_jobs_completed || 124}
+                  {activeProvider.total_jobs_completed || 124}
                 </div>
               </div>
             </div>
@@ -310,8 +326,8 @@ export default function RequestDetailPage() {
               <span className="text-[10.5px] font-mono uppercase tracking-wider text-[#A78BFA]">
                 Sobre el profesional
               </span>
-              <p className="text-xs text-zinc-300 leading-relaxed">
-                {provider.bio || "Cerrajero matriculado con 12 años de experiencia. Especialista en aperturas sin daño, cerraduras de alta seguridad y urgencias las 24hs."}
+              <p className="text-xs text-zinc-300 leading-relaxed italic bg-white/3 p-3.5 rounded-[16px] border border-white/6">
+                «{activeProvider.bio || "Profesional verificado con amplia experiencia y trayectoria de confianza."}»
               </p>
             </div>
 
@@ -321,7 +337,7 @@ export default function RequestDetailPage() {
                 Especialidades
               </span>
               <div className="flex flex-wrap gap-1.5">
-                {(provider.specialties || ["Aperturas", "Reemplazo", "Seguridad", "Urgencias"]).map((spec) => (
+                {(activeProvider.specialties || ["Servicio Calificado", "Urgencias", "Atención 24hs"]).map((spec) => (
                   <span
                     key={spec}
                     className="px-3 py-1 rounded-full bg-[#7C5CFF]/14 border border-[#7C5CFF]/30 text-[#C4B5FD] text-xs font-mono"
@@ -344,7 +360,7 @@ export default function RequestDetailPage() {
                   className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-sm font-bold text-white shadow-lg transition cursor-pointer"
                 >
                   <MessageSquare className="size-4" />
-                  <span>Enviar mensaje a {provider.name.split(" ")[0]}</span>
+                  <span>Enviar mensaje a {activeProvider.name.split(" ")[0]}</span>
                 </button>
               </div>
             )}

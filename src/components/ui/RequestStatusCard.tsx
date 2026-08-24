@@ -234,7 +234,7 @@ export function RequestStatusCard({
   cancelledBy = "provider",
   cancellationReason,
   agreedPrice,
-  providerName: initialProviderName = "Roberto Medina",
+  providerName: initialProviderName,
   providerAvatar: initialProviderAvatar,
   providerRating: initialProviderRating = 4.9,
   alternativeProviders = [],
@@ -244,9 +244,56 @@ export function RequestStatusCard({
 }: RequestStatusCardProps) {
   // Estado local para permitir reasignación inmediata en la misma vista sin recargar
   const [currentStatus, setCurrentStatus] = useState<string>(initialStatus);
-  const [currentProviderName, setCurrentProviderName] = useState<string>(initialProviderName);
-  const [currentProviderAvatar, setCurrentProviderAvatar] = useState<string | undefined>(initialProviderAvatar);
-  const [currentProviderRating, setCurrentProviderRating] = useState<number>(initialProviderRating);
+
+  // Inicialización dinámica del profesional desde las props o desde el almacenamiento de la sesión del usuario
+  const [currentProviderName, setCurrentProviderName] = useState<string>(() => {
+    if (initialProviderName && initialProviderName !== "Roberto Medina") return initialProviderName;
+    if (typeof window !== "undefined") {
+      try {
+        const stored = sessionStorage.getItem("accepted_provider");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.name) return parsed.name;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return initialProviderName || "Carlos Gómez";
+  });
+
+  const [currentProviderAvatar, setCurrentProviderAvatar] = useState<string | undefined>(() => {
+    if (initialProviderAvatar) return initialProviderAvatar;
+    if (typeof window !== "undefined") {
+      try {
+        const stored = sessionStorage.getItem("accepted_provider");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.avatar_url || parsed?.photo) return parsed.avatar_url || parsed.photo;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return undefined;
+  });
+
+  const [currentProviderRating, setCurrentProviderRating] = useState<number>(() => {
+    if (initialProviderRating) return initialProviderRating;
+    if (typeof window !== "undefined") {
+      try {
+        const stored = sessionStorage.getItem("accepted_provider");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.avg_rating || parsed?.rating) return parsed.avg_rating || parsed.rating;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return 4.9;
+  });
+
   const [assignedAt, setAssignedAt] = useState<string | undefined>(initialAssignedAt);
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [reassignedSuccessMsg, setReassignedSuccessMsg] = useState<string | null>(null);
@@ -304,7 +351,7 @@ export function RequestStatusCard({
 
   // 3. Filtrar estrictamente para EXCLUIR al profesional que canceló
   const availableAlternatives = (alternativeProviders && alternativeProviders.length > 0 ? alternativeProviders : categoryAlternatives).filter(
-    (p) => p.name.toLowerCase().trim() !== initialProviderName.toLowerCase().trim()
+    (p) => !initialProviderName || p.name.toLowerCase().trim() !== initialProviderName.toLowerCase().trim()
   );
 
   // Ejecución de Reasignación de Profesional en 1 Clic (100% a prueba de fallos)

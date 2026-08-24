@@ -96,25 +96,62 @@ export default function RateWorkPage() {
           </p>
         </div>
 
-        {/* Card del profesional */}
-        <div className="rounded-[24px] bg-[#131318] border border-white/9 p-5 text-center space-y-3 shadow-xl backdrop-blur-md">
-          <div className="relative mx-auto size-16 rounded-full bg-[#7C5CFF] flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-[#7C5CFF]/30">
-            RM
-          </div>
-          <div>
-            <div className="flex items-center justify-center gap-1.5">
-              <h2 className="text-base font-bold text-[#F4F3F7]">
-                Roberto Medina
-              </h2>
-              <span className="size-3.5 rounded-full bg-[#3DDC84]/16 border border-[#3DDC84]/45 text-[#3DDC84] font-bold text-[9px] flex items-center justify-center">
-                ✓
-              </span>
+        {/* Card del profesional dinámico */}
+        {(() => {
+          let name = "Carlos Gómez";
+          let avatar = "";
+          let category = "Servicio completado";
+          if (typeof window !== "undefined") {
+            try {
+              const stored = sessionStorage.getItem("accepted_provider");
+              if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed?.name) name = parsed.name;
+                if (parsed?.avatar_url || parsed?.photo) avatar = parsed.avatar_url || parsed.photo;
+                if (parsed?.specialties?.[0]) category = `Servicio de ${parsed.specialties[0]}`;
+              }
+            } catch {
+              // ignore
+            }
+          }
+          const initials = name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .substring(0, 2)
+            .toUpperCase();
+
+          return (
+            <div className="rounded-[24px] bg-[#131318] border border-white/9 p-5 text-center space-y-3 shadow-xl backdrop-blur-md">
+              <div className="relative mx-auto size-16 rounded-full bg-[#7C5CFF] flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-[#7C5CFF]/30 overflow-hidden">
+                {avatar ? (
+                  <Image
+                    src={avatar}
+                    alt={name}
+                    fill
+                    unoptimized
+                    className="object-cover rounded-full"
+                  />
+                ) : (
+                  <span>{initials}</span>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center justify-center gap-1.5">
+                  <h2 className="text-base font-bold text-[#F4F3F7]">
+                    {name}
+                  </h2>
+                  <span className="size-3.5 rounded-full bg-[#3DDC84]/16 border border-[#3DDC84]/45 text-[#3DDC84] font-bold text-[9px] flex items-center justify-center">
+                    ✓
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  {category}
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Servicio de Cerrajería completado
-            </p>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* 5 estrellas grandes interactivas */}
         <div className="flex flex-col items-center space-y-3 pt-2">
