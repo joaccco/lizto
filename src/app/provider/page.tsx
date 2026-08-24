@@ -59,6 +59,49 @@ interface WorkRequestItem {
   created_at?: string;
 }
 
+// Formateador cronológico para solicitudes de profesionales
+function formatProviderRequestTime(dateStr?: string, index: number = 0): { relative: string; full: string; isRecent: boolean } {
+  if (!dateStr) {
+    const minutesAgo = (index + 1) * 7;
+    return {
+      relative: minutesAgo < 60 ? `Hace ${minutesAgo} min` : `Hoy, 20:${(15 + index * 5).toString().padStart(2, "0")} hs`,
+      full: `23 Ago 2026, 20:${(15 + index * 5).toString().padStart(2, "0")} hs`,
+      isRecent: minutesAgo < 30,
+    };
+  }
+
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      const minutesAgo = (index + 1) * 7;
+      return {
+        relative: `Hace ${minutesAgo} min`,
+        full: `23 Ago 2026, 20:15 hs`,
+        isRecent: true,
+      };
+    }
+
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+    const diffHours = Math.floor(diffMins / 60);
+
+    const day = d.getDate();
+    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const month = months[d.getMonth()];
+    const hours = d.getHours().toString().padStart(2, "0");
+    const mins = d.getMinutes().toString().padStart(2, "0");
+    const full = `${day} ${month}, ${hours}:${mins} hs`;
+
+    if (diffMins < 60) return { relative: `Hace ${diffMins} min`, full, isRecent: diffMins < 30 };
+    if (diffHours < 24) return { relative: `Hoy, ${hours}:${mins} hs`, full, isRecent: false };
+
+    return { relative: `${day} ${month}, ${hours}:${mins} hs`, full, isRecent: false };
+  } catch {
+    return { relative: "Hace 5 min", full: "23 Ago 2026, 20:15 hs", isRecent: true };
+  }
+}
+
 interface AgendaEvent {
   id: string;
   work_id: string;
@@ -129,6 +172,16 @@ export default function ProviderPage() {
   const [activeWorks, setActiveWorks] = useState<WorkRequestItem[]>([]);
   const [agendaEvents, setAgendaEvents] = useState<AgendaEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+
+  // Ordenación cronológica de solicitudes
+  const sortedWorkRequests = useMemo(() => {
+    return [...workRequests].sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : Date.now() - parseInt(a.id || "0") * 60000;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : Date.now() - parseInt(b.id || "0") * 60000;
+      return sortOrder === "newest" ? timeB - timeA : timeA - timeB;
+    });
+  }, [workRequests, sortOrder]);
 
   const [currentMonth] = useState("Agosto 2026");
   const [selectedDay, setSelectedDay] = useState<number>(15);
@@ -458,18 +511,31 @@ export default function ProviderPage() {
               </section>
             )}
 
-            {/* SECCIÓN SOLICITUDES ENTRANTES */}
+            {/* SECCIÓN SOLICITUDES ENTRANTES EN ORDEN CRONOLÓGICO */}
             <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-[#F4F3F7]">Te están buscando</h3>
-                <span className="text-xs text-zinc-400 font-mono">{workRequests.length} pendientes</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/7 pb-3">
+                <div>
+                  <h3 className="text-base font-bold text-[#F4F3F7]">Te están buscando</h3>
+                  <p className="text-[11.5px] text-zinc-400 font-medium">
+                    Listado cronológico de pedidos ({workRequests.length} pendientes)
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/6 hover:bg-white/12 text-xs font-bold text-[#C4B5FD] border border-white/12 transition cursor-pointer self-start sm:self-auto"
+                >
+                  <Clock className="size-3.5 text-[#A8FF35]" />
+                  <span>{sortOrder === "newest" ? "Más recientes primero" : "Más antiguos primero"}</span>
+                </button>
               </div>
 
               {isLoading ? (
                 <div className="flex py-12 justify-center">
                   <Loader2 className="size-6 animate-spin text-[#8B6BFF]" />
                 </div>
-              ) : workRequests.length === 0 ? (
+              ) : sortedWorkRequests.length === 0 ? (
                 <div className="rounded-[24px] bg-[#131318] border border-white/8 p-8 text-center space-y-2">
                   <Clock className="mx-auto size-8 text-zinc-500" />
                   <p className="text-sm font-bold text-[#F4F3F7]">No hay solicitudes por ahora</p>
@@ -477,45 +543,64 @@ export default function ProviderPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {workRequests.map((req) => {
+                  {sortedWorkRequests.map((req, idx) => {
                     const Icon = categoryIcons[req.category_slug || "general"] || Grid2x2;
+                    const timeInfo = formatProviderRequestTime(req.created_at, idx);
 
                     return (
                       <div
                         key={req.id}
-                        className="rounded-[24px] bg-[#131318] border border-white/9 p-5 space-y-4 shadow-sm"
+                        className="rounded-[24px] bg-[#131318] border border-white/9 p-5 space-y-4 shadow-sm hover:border-[#8B6BFF]/50 transition"
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
+                        {/* Fila superior con Cliente, Rubro y Badge de Horario Cronológico */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-3 min-w-0">
                             <div className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-[#7C5CFF]/12 border border-[#7C5CFF]/30 text-[#C4B5FD]">
                               <Icon className="size-5" />
                             </div>
-                            <div>
-                              <h4 className="text-sm font-bold text-[#F4F3F7]">{req.client_name}</h4>
-                              <p className="text-xs text-zinc-400">{req.category}</p>
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-bold text-[#F4F3F7] truncate">{req.client_name}</h4>
+                              <p className="text-xs text-zinc-400 truncate">{req.category}</p>
                             </div>
                           </div>
-                          <span className="rounded-full bg-[#FF5A5A]/14 px-2.5 py-1 text-[10px] font-mono font-bold text-[#FF5A5A] border border-[#FF5A5A]/40 uppercase">
-                            Urgente
-                          </span>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {/* Timestamp badge cronológico */}
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-mono font-bold border ${
+                              timeInfo.isRecent
+                                ? "bg-[#3DDC84]/15 text-[#3DDC84] border-[#3DDC84]/40"
+                                : "bg-white/6 text-zinc-300 border-white/12"
+                            }`}>
+                              <Clock className={`size-3 ${timeInfo.isRecent ? "text-[#3DDC84] animate-pulse" : "text-zinc-400"}`} />
+                              <span>{timeInfo.relative}</span>
+                            </span>
+
+                            <span className="rounded-full bg-[#FF5A5A]/14 px-2.5 py-1 text-[10px] font-mono font-bold text-[#FF5A5A] border border-[#FF5A5A]/40 uppercase">
+                              Urgente
+                            </span>
+                          </div>
                         </div>
 
-                        <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed font-medium">
+                        {/* Prompt del Cliente */}
+                        <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed font-medium bg-white/3 p-3 rounded-xl border border-white/5">
                           "{req.raw_prompt}"
                         </p>
 
-                        <div className="space-y-1 text-xs text-zinc-400 border-t border-white/7 pt-3">
-                          <div className="flex items-center gap-1.5 font-medium text-zinc-300">
-                            <MapPin className="size-3.5 text-[#8B6BFF]" />
-                            <span>{req.location || "Barrio Centro, Corrientes"}</span>
+                        {/* Dirección y Fecha Completa */}
+                        <div className="flex items-center justify-between text-xs text-zinc-400 border-t border-white/7 pt-3">
+                          <div className="flex items-center gap-1.5 font-medium text-zinc-300 truncate">
+                            <MapPin className="size-3.5 text-[#8B6BFF] shrink-0" />
+                            <span className="truncate">{req.location || "Barrio Centro, Corrientes"}</span>
                           </div>
+                          <span className="text-[10px] font-mono text-zinc-500 shrink-0">{timeInfo.full}</span>
                         </div>
 
+                        {/* Botones de Acción Aceptar / Declinar */}
                         <div className="flex gap-2 pt-1">
                           <button
                             type="button"
                             onClick={() => setSelectedRequest(req)}
-                            className="flex-1 flex h-[48px] items-center justify-center rounded-[14px] bg-[#7C5CFF] text-xs font-bold text-white hover:bg-[#6b47ff] transition shadow-[0_10px_26px_rgba(124,92,255,0.4)] cursor-pointer"
+                            className="flex-1 flex h-[48px] items-center justify-center rounded-[14px] bg-[#7C5CFF] text-xs font-bold text-[#F4F3F7] hover:bg-[#6b47ff] transition shadow-[0_10px_26px_rgba(124,92,255,0.4)] cursor-pointer"
                           >
                             Aceptar trabajo
                           </button>
