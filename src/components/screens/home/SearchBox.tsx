@@ -3,6 +3,7 @@
 import { ArrowRight, MapPin, Navigation, Sparkles } from "lucide-react";
 import { FormEvent, useEffect, useState, forwardRef } from "react";
 
+import { VoiceInputButton } from "@/components/ui/VoiceInputButton";
 import { cn } from "@/lib/utils";
 
 interface SearchBoxProps {
@@ -109,6 +110,19 @@ export const SearchBox = forwardRef<HTMLTextAreaElement, SearchBoxProps>(
       <form onSubmit={handleSubmit} className={cn("space-y-4", className)}>
         {/* Glass Card Container */}
         <div className="rounded-[26px] p-5 bg-gradient-to-b from-white/10 to-white/[0.035] backdrop-blur-[28px] border border-white/14 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_18px_44px_rgba(0,0,0,0.5)] transition focus-within:border-[#8B6BFF] focus-within:ring-2 focus-within:ring-[#7C5CFF]/30">
+          
+          {/* Header Row con el Botón Resaltable de Dictado por Voz */}
+          <div className="flex items-center justify-between gap-2 pb-2">
+            <span className="text-[11px] font-mono tracking-wider uppercase text-zinc-400 font-bold">
+              Describí tu pedido
+            </span>
+            <VoiceInputButton
+              onTranscript={(text) => {
+                setPrompt(text);
+              }}
+            />
+          </div>
+
           <label htmlFor="service-request" className="sr-only">
             Describí el servicio que necesitás
           </label>
