@@ -211,24 +211,29 @@ export default function ProviderProfileEditPage() {
           </div>
         </div>
 
-        {/* Slider Radio Cobertura 5km - 30km */}
+        {/* Slider Radio Cobertura 1km - 50km */}
         <div className="space-y-2 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-4">
           <div className="flex justify-between items-center text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-            <span>Radio de cobertura</span>
-            <span className="text-[#4F46E5] font-bold text-sm">{radiusKm} km</span>
+            <div>
+              <span className="block font-bold">Radio de cobertura</span>
+              <span className="text-[11px] text-zinc-400 font-normal">Define la zona para recibir nuevas solicitudes (Máx. 50 km)</span>
+            </div>
+            <span className="text-[#4F46E5] font-bold text-base bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1 rounded-xl border border-indigo-200 dark:border-indigo-800 shrink-0">
+              {radiusKm} km
+            </span>
           </div>
           <input
             type="range"
-            min={5}
-            max={30}
+            min={1}
+            max={50}
             step={1}
             value={radiusKm}
-            onChange={(e) => setRadiusKm(parseInt(e.target.value, 10))}
-            className="w-full accent-[#4F46E5]"
+            onChange={(e) => setRadiusKm(Math.max(1, Math.min(50, parseInt(e.target.value, 10) || 1)))}
+            className="w-full accent-[#4F46E5] cursor-pointer"
           />
-          <div className="flex justify-between text-[10px] text-zinc-400">
-            <span>5 km</span>
-            <span>30 km</span>
+          <div className="flex justify-between text-[10px] text-zinc-400 font-medium">
+            <span>1 km (Mínimo)</span>
+            <span>50 km (Máximo permitido)</span>
           </div>
         </div>
 

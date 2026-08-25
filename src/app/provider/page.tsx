@@ -173,8 +173,33 @@ export default function ProviderPage() {
     });
   }, [workRequests, sortOrder]);
 
-  const [currentMonth] = useState("Agosto 2026");
-  const [selectedDay, setSelectedDay] = useState<number>(15);
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [selectedDay, setSelectedDay] = useState<number>(new Date().getDate());
+  const [pendingScheduleWorks, setPendingScheduleWorks] = useState<AgendaEvent[]>([]);
+  const [historyWorks, setHistoryWorks] = useState<WorkRequestItem[]>([]);
+
+  const currentMonthStr = useMemo(() => {
+    const monthName = currentDate.toLocaleDateString("es-ES", { month: "long" });
+    const year = currentDate.getFullYear();
+    return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+  }, [currentDate]);
+
+  const handlePrevMonth = () => {
+    setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    const now = new Date();
+    const maxDate = new Date(now.getFullYear(), now.getMonth() + 12, 1);
+    const nextDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    if (nextDate <= maxDate) {
+      setCurrentDate(nextDate);
+    }
+  };
+
+  const daysInCurrentMonth = useMemo(() => {
+    return new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  }, [currentDate]);
 
   const [selectedRequest, setSelectedRequest] = useState<WorkRequestItem | null>(null);
   const [estimatedDuration, setEstimatedDuration] = useState<number>(30);
@@ -226,18 +251,21 @@ export default function ProviderPage() {
     try {
       const [resRequests, resAgenda] = await Promise.all([
         apiFetch<{ data: WorkRequestItem[] }>(ENDPOINTS.WORK_REQUESTS),
-        apiFetch<{ data: AgendaEvent[] }>(ENDPOINTS.PROVIDER_AGENDA).catch(() => ({ data: [] })),
+        apiFetch<{ data: AgendaEvent[]; pending_schedule?: AgendaEvent[] }>(ENDPOINTS.PROVIDER_AGENDA).catch(() => ({ data: [], pending_schedule: [] })),
       ]);
 
       const items = resRequests.data || [];
       const activeStatuses = ["confirmed", "in_progress", "pending_diagnosis_quote"];
-      
+
       const pending = items.filter((i) => !activeStatuses.includes(i.status) && i.status !== "completed" && i.status !== "cancelled");
       const activeList = items.filter((i) => activeStatuses.includes(i.status));
+      const historyList = items.filter((i) => i.status === "completed" || i.status === "cancelled");
 
       setWorkRequests(pending);
       setActiveWorks(activeList);
+      setHistoryWorks(historyList);
       setAgendaEvents(resAgenda.data || []);
+      setPendingScheduleWorks(resAgenda.pending_schedule || []);
     } catch {
       // keep default
     } finally {
@@ -317,25 +345,33 @@ export default function ProviderPage() {
 
   const daysWithEvents = useMemo(() => {
     const set = new Set<number>();
-    agendaEvents.forEach((ev) => set.add(ev.day));
-    Object.keys(MOCK_AGENDA).forEach((d) => set.add(Number(d)));
+    const targetMonth = currentDate.getMonth() + 1;
+    const targetYear = currentDate.getFullYear();
+
+    agendaEvents.forEach((ev) => {
+      if (ev.month === targetMonth && ev.year === targetYear) {
+        set.add(ev.day);
+      }
+    });
     return set;
-  }, [agendaEvents]);
+  }, [agendaEvents, currentDate]);
 
   const selectedEvents: CalendarEventDisplay[] = useMemo(() => {
-    if (agendaEvents.length > 0) {
-      const matched = agendaEvents.filter((ev) => ev.day === selectedDay);
-      if (matched.length > 0) {
-        return matched.map((ev) => ({
-          id: ev.id,
-          time: ev.time || "09:00",
-          clientName: ev.client_name,
-          jobType: ev.job_type,
-          address: ev.address,
-          status: ev.status,
-        }));
-      }
+    const targetMonth = currentDate.getMonth() + 1;
+    const targetYear = currentDate.getFullYear();
+
+    const matched = agendaEvents.filter((ev) => ev.year === targetYear && ev.month === targetMonth && ev.day === selectedDay);
+    if (matched.length > 0) {
+      return matched.map((ev) => ({
+        id: ev.id,
+        time: ev.time || "09:00",
+        clientName: ev.client_name,
+        jobType: ev.job_type,
+        address: ev.address,
+        status: ev.status,
+      }));
     }
+
     return (MOCK_AGENDA[selectedDay] || []).map((ev) => ({
       id: ev.id,
       time: ev.time,
@@ -344,7 +380,7 @@ export default function ProviderPage() {
       address: ev.address,
       status: ev.status,
     }));
-  }, [agendaEvents, selectedDay]);
+  }, [agendaEvents, currentDate, selectedDay]);
 
   return (
     <div className="min-h-screen bg-[#08080A] text-[#F4F3F7] font-sans pb-24">
@@ -619,6 +655,45 @@ export default function ProviderPage() {
                 </div>
               )}
             </section>
+
+            {/* SECCIÓN HISTORIAL DE TRABAJOS COMPLETADOS Y CANCELADOS (PARTE B.3) */}
+            {historyWorks.length > 0 && (
+              <section className="space-y-3 border-t border-white/8 pt-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-zinc-400">Historial de trabajos</h3>
+                  <span className="text-xs text-zinc-500 font-medium">{historyWorks.length} finalizados</span>
+                </div>
+                <div className="space-y-2">
+                  {historyWorks.map((work) => {
+                    const isCompleted = work.status === "completed";
+                    return (
+                      <div
+                        key={work.id || work.work_id}
+                        className="rounded-[20px] bg-white/3 border border-white/6 p-4 space-y-2 opacity-75 hover:opacity-100 transition"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-zinc-300">{work.client_name}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            isCompleted ? "bg-[#7C5CFF]/15 text-[#C4B5FD] border border-[#7C5CFF]/30" : "bg-white/5 text-zinc-500 border border-white/10"
+                          }`}>
+                            {isCompleted ? "Completado" : "Cancelado"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-400 line-clamp-1">«{work.raw_prompt}»</p>
+                        {work.conversation_id && (
+                          <Link
+                            href={`/conversations/${work.conversation_id}`}
+                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-zinc-400 hover:text-white transition mt-1"
+                          >
+                            <MessageSquare className="size-3 text-[#7C5CFF]" /> Ver historial de chat
+                          </Link>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </div>
         )}
 
@@ -627,12 +702,22 @@ export default function ProviderPage() {
           <div className="space-y-6">
             <section className="rounded-[24px] bg-[#131318] border border-white/9 p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-[#F4F3F7]">{currentMonth}</h3>
+                <h3 className="text-sm font-bold text-[#F4F3F7]">{currentMonthStr}</h3>
                 <div className="flex gap-1">
-                  <button type="button" className="p-1.5 rounded-lg hover:bg-white/5 text-zinc-400">
+                  <button
+                    type="button"
+                    onClick={handlePrevMonth}
+                    className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-300 transition cursor-pointer"
+                    title="Mes anterior"
+                  >
                     <ChevronLeft className="size-4" />
                   </button>
-                  <button type="button" className="p-1.5 rounded-lg hover:bg-white/5 text-zinc-400">
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-300 transition cursor-pointer"
+                    title="Próximo mes"
+                  >
                     <ChevronRight className="size-4" />
                   </button>
                 </div>
@@ -644,7 +729,7 @@ export default function ProviderPage() {
                     {d}
                   </span>
                 ))}
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                {Array.from({ length: daysInCurrentMonth }, (_, i) => i + 1).map((day) => {
                   const hasEvents = daysWithEvents.has(day);
                   const isSelected = selectedDay === day;
 
@@ -670,6 +755,36 @@ export default function ProviderPage() {
                 })}
               </div>
             </section>
+
+            {/* SECCIÓN TRABAJOS PENDIENTES DE COORDINAR (PARTE B.1) */}
+            {pendingScheduleWorks.length > 0 && (
+              <section className="space-y-3 rounded-[24px] bg-[#131318] border border-amber-500/30 p-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="size-4 text-amber-400" />
+                    <h3 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                      Pendientes de coordinar horario ({pendingScheduleWorks.length})
+                    </h3>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {pendingScheduleWorks.map((work) => (
+                    <div
+                      key={work.id || work.work_id}
+                      className="flex items-center justify-between rounded-[18px] bg-white/4 border border-white/8 p-3.5"
+                    >
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-[#F4F3F7] truncate">{work.client_name}</h4>
+                        <p className="text-[11px] text-zinc-300 truncate">«{work.job_type}»</p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-bold text-amber-300 border border-amber-500/30 ml-2">
+                        A coordinar
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <section className="space-y-3">
               <h3 className="text-[10.5px] font-mono tracking-wider uppercase text-zinc-500 font-semibold">
