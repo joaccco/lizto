@@ -363,32 +363,7 @@ export default function MapPickerContainer({
         </div>
       </form>
 
-      {/* Presets Rápidos de Zonas Frecuentes */}
-      <div className="space-y-1.5">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-semibold block">
-          Zonas Frecuentes
-        </span>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-          {NEIGHBORHOOD_PRESETS.map((preset) => {
-            const isSelected = activePreset === preset.name;
-            return (
-              <button
-                key={preset.name}
-                type="button"
-                onClick={() => handleSelectPreset(preset)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer border flex items-center gap-1.5 ${
-                  isSelected
-                    ? "bg-[#7C5CFF] border-[#7C5CFF] text-white shadow-[0_0_16px_rgba(124,92,255,0.4)]"
-                    : "bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10 hover:border-white/20"
-                }`}
-              >
-                {isSelected && <Check className="size-3 text-[#A8FF35]" />}
-                <span>{preset.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+
 
       {/* MAPA INTERACTIVO REAL: CLIC DIRECTO Y PIN ARRASTRABLE 100% OPERATIVO */}
       <div className="relative h-72 w-full overflow-hidden rounded-[24px] border border-white/16 shadow-2xl bg-[#0d0d12]">
