@@ -2,7 +2,7 @@
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, Navigation, Search, Check, Sparkles, Layers, Eye, Plus, Minus } from "lucide-react";
+import { MapPin, Navigation, Search, Check, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 
@@ -104,8 +104,6 @@ export default function MapPickerContainer({
     if (initialAddress) setAddress(initialAddress);
   }, [initialLat, initialLng, initialAddress]);
 
-  // Modos de mapa: 'dark' (Callejero Google Dark) o 'satellite' (Satélite Real Google Maps HD)
-  const [mapMode, setMapMode] = useState<"dark" | "satellite">("dark");
   const markerRef = useRef<L.Marker | null>(null);
 
   // Helper para notificaciones rápidas
@@ -308,63 +306,6 @@ export default function MapPickerContainer({
         </div>
       )}
 
-      {/* Selector de Modo de Capa (Callejero Dark vs Satélite Real Google HD) */}
-      <div className="flex items-center justify-between gap-2 bg-white/4 p-1.5 rounded-2xl border border-white/10">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setMapMode("dark")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-              mapMode === "dark"
-                ? "bg-[#7C5CFF] text-white shadow-md"
-                : "bg-transparent text-zinc-400 hover:text-white"
-            }`}
-          >
-            <Eye className="size-3.5" />
-            <span>Callejero Google Dark</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMapMode("satellite")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-              mapMode === "satellite"
-                ? "bg-[#7C5CFF] text-white shadow-md"
-                : "bg-transparent text-zinc-400 hover:text-white"
-            }`}
-          >
-            <Layers className="size-3.5" />
-            <span>Satélite Google HD</span>
-          </button>
-        </div>
-
-        <div className="text-[11px] font-mono text-zinc-400 font-semibold px-2">
-          📍 Pin Arrastrable
-        </div>
-      </div>
-
-      {/* Barra de Búsqueda de Ubicación */}
-      <form onSubmit={handleSearchSubmit} className="relative w-full">
-        <div className="relative flex items-center">
-          <Search className="absolute left-3.5 size-4 text-zinc-400 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar calle y número (ej: Thames 1842, Palermo)..."
-            className="w-full h-11 pl-10 pr-24 rounded-xl border border-white/12 bg-white/5 text-xs text-[#F4F3F7] placeholder-zinc-500 focus:outline-none focus:border-[#7C5CFF] focus:ring-1 focus:ring-[#7C5CFF] transition"
-          />
-          <button
-            type="submit"
-            className="absolute right-1.5 px-3 py-1.5 rounded-lg bg-[#7C5CFF] hover:bg-[#6b47ff] text-[11px] font-bold text-white transition cursor-pointer"
-          >
-            Ir a dirección
-          </button>
-        </div>
-      </form>
-
-
-
       {/* MAPA INTERACTIVO REAL: CLIC DIRECTO Y PIN ARRASTRABLE 100% OPERATIVO */}
       <div className="relative h-72 w-full overflow-hidden rounded-[24px] border border-white/16 shadow-2xl bg-[#0d0d12]">
         <MapContainer
@@ -373,21 +314,12 @@ export default function MapPickerContainer({
           scrollWheelZoom={true}
           className="h-full w-full z-0 cursor-crosshair"
         >
-          {/* Capas de Azulejos: CartoDB Dark Matter o Google Maps Satélite HD */}
-          {mapMode === "dark" ? (
-            <TileLayer
-              attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              subdomains="abcd"
-              maxZoom={19}
-            />
-          ) : (
-            <TileLayer
-              attribution='&copy; <a href="https://www.google.com/maps">Google Maps</a>'
-              url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
-              maxZoom={20}
-            />
-          )}
+          {/* Capa de Satélite Real Google Maps HD (Predefinida) */}
+          <TileLayer
+            attribution='&copy; <a href="https://www.google.com/maps">Google Maps</a>'
+            url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+            maxZoom={20}
+          />
 
           {/* Marcador Neón Arrastrable */}
           <Marker
