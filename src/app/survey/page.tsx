@@ -52,9 +52,27 @@ export default function SurveyPage() {
 
   const [categorySlug, setCategorySlug] = useState<string>("cerrajeria");
   const [showMapStep, setShowMapStep] = useState(false);
-  const [locationLat, setLocationLat] = useState<number>(-34.5889);
-  const [locationLng, setLocationLng] = useState<number>(-58.4306);
-  const [locationAddress, setLocationAddress] = useState<string>("Thames 1842, Palermo, CABA");
+  const [locationLat, setLocationLat] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const s = sessionStorage.getItem("location_lat");
+      if (s) return parseFloat(s);
+    }
+    return -34.5889;
+  });
+  const [locationLng, setLocationLng] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const s = sessionStorage.getItem("location_lng");
+      if (s) return parseFloat(s);
+    }
+    return -58.4306;
+  });
+  const [locationAddress, setLocationAddress] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const s = sessionStorage.getItem("location_address");
+      if (s) return s;
+    }
+    return "Thames 1842, Palermo, CABA";
+  });
 
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -131,7 +149,22 @@ export default function SurveyPage() {
 
   const handleFinishSurvey = async (finalAnswersMap: Record<string, any>) => {
     setIsSubmitting(true);
+    setError(null);
     try {
+      let activeRequestId = sessionStorage.getItem("service_request_id");
+
+      if (!activeRequestId) {
+        const stored = sessionStorage.getItem("parsed_request");
+        if (stored) {
+          const parsedData = JSON.parse(stored);
+          const parsedIntent: ParsedRequest = parsedData.parsed_request || parsedData;
+          const reqRes = await createRequest(parsedIntent).catch(() => null);
+          if (reqRes?.id) {
+            activeRequestId = reqRes.id;
+          }
+        }
+      }
+
       const formattedAnswers: AnswerItem[] = questions.map((q) => ({
         question_key: q.key,
         question_text: q.text,
@@ -139,23 +172,26 @@ export default function SurveyPage() {
         question_id: q.id,
       }));
 
+      const finalAddress = locationAddress.trim() || "Thames 1842, Palermo, CABA";
+
       if (typeof window !== "undefined") {
         sessionStorage.setItem("location_lat", String(locationLat));
         sessionStorage.setItem("location_lng", String(locationLng));
-        sessionStorage.setItem("location_address", locationAddress);
+        sessionStorage.setItem("location_address", finalAddress);
       }
 
       await submitSurvey(formattedAnswers, {
         lat: locationLat,
         lng: locationLng,
-        address: locationAddress,
+        address: finalAddress,
       });
       await createMatchSession();
       router.push("/browse");
     } catch (err: any) {
+      console.error("Error al finalizar encuesta:", err);
       const message = err?.errors
         ? Object.values(err.errors).flat().join(", ")
-        : err?.message || "Error al enviar la encuesta";
+        : err?.message || "Error al enviar la ubicación de la solicitud";
       setError(message);
       setIsSubmitting(false);
     }
@@ -263,6 +299,20 @@ export default function SurveyPage() {
           )}
         </div>
 
+        {/* Global Error Banner */}
+        {error && (
+          <div className="rounded-2xl border border-red-500/40 bg-red-500/14 p-4 text-xs font-bold text-red-300 flex items-center justify-between gap-3 shadow-lg">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="text-xs font-semibold text-white underline shrink-0 cursor-pointer"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+
         {/* MAP STEP */}
         {showMapStep ? (
           <div className="space-y-6 pt-2">
@@ -274,15 +324,27 @@ export default function SurveyPage() {
                 setLocationLat(newLat);
                 setLocationLng(newLng);
                 setLocationAddress(newAddr);
+                if (typeof window !== "undefined") {
+                  sessionStorage.setItem("location_lat", String(newLat));
+                  sessionStorage.setItem("location_lng", String(newLng));
+                  sessionStorage.setItem("location_address", newAddr);
+                }
               }}
             />
             <button
               type="button"
               onClick={() => handleNextStep()}
-              className="flex h-[56px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-base font-bold text-white transition shadow-[0_14px_38px_rgba(124,92,255,0.45)] cursor-pointer"
+              disabled={isSubmitting}
+              className="flex h-[56px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-base font-bold text-white transition shadow-[0_14px_38px_rgba(124,92,255,0.45)] cursor-pointer disabled:opacity-60"
             >
-              <span>Finalizar y buscar profesionales</span>
-              <ChevronRight className="size-5" />
+              {isSubmitting ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <>
+                  <span>Finalizar y buscar profesionales</span>
+                  <ChevronRight className="size-5" />
+                </>
+              )}
             </button>
           </div>
         ) : currentQuestion ? (
@@ -304,12 +366,6 @@ export default function SurveyPage() {
                 {currentQuestion.text}
               </p>
             </div>
-
-            {error && (
-              <div className="rounded-2xl border border-red-900/80 bg-red-950/40 p-3 text-sm text-red-400">
-                {error}
-              </div>
-            )}
 
             {/* TIMING SELECTOR QUESTION */}
             {currentQuestion.input_type === "timing_selector" || currentQuestion.key === "service_schedule" ? (

@@ -98,6 +98,12 @@ export default function MapPickerContainer({
   const [activePreset, setActivePreset] = useState<string>("Palermo");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (initialLat) setLat(initialLat);
+    if (initialLng) setLng(initialLng);
+    if (initialAddress) setAddress(initialAddress);
+  }, [initialLat, initialLng, initialAddress]);
+
   // Modos de mapa: 'dark' (Callejero Google Dark) o 'satellite' (Satélite Real Google Maps HD)
   const [mapMode, setMapMode] = useState<"dark" | "satellite">("dark");
   const markerRef = useRef<L.Marker | null>(null);

@@ -103,6 +103,7 @@ export function VoiceInputButton({
     try {
       recognitionRef.current.start();
       setIsListening(true);
+
       if (onListeningChange) onListeningChange(true);
     } catch (err: any) {
       console.warn("Failed to start speech recognition:", err);
@@ -150,8 +151,8 @@ export function VoiceInputButton({
         aria-label={isListening ? "Detener dictado por voz" : "Dictar pedido por voz"}
         aria-pressed={isListening}
         className={`relative flex items-center justify-center rounded-2xl p-3 font-bold text-xs transition-all duration-300 cursor-pointer shadow-lg group ${isListening
-            ? "bg-[#FF5A5A] text-white ring-4 ring-[#FF5A5A]/40 animate-pulse"
-            : "bg-[#7C5CFF]/20 hover:bg-[#7C5CFF]/35 text-[#C4B5FD] border border-[#7C5CFF]/50 hover:border-[#8B6BFF] hover:scale-[1.03]"
+          ? "bg-[#FF5A5A] text-white ring-4 ring-[#FF5A5A]/40 animate-pulse"
+          : "bg-[#7C5CFF]/20 hover:bg-[#7C5CFF]/35 text-[#C4B5FD] border border-[#7C5CFF]/50 hover:border-[#8B6BFF] hover:scale-[1.03]"
           }`}
       >
         {/* Anillo exterior de onda expansiva cuando está grabando */}
