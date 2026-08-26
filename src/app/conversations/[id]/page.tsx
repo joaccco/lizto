@@ -289,13 +289,13 @@ export default function ConversationPage() {
                 onError={() => setImageError(true)}
               />
             ) : (
-              <span className="text-xs font-bold text-zinc-300">{initials}</span>
+              <span className="text-xs font-bold text-zinc-300" suppressHydrationWarning>{initials}</span>
             )}
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h1 className="text-base font-bold text-[#F4F3F7] truncate">
+              <h1 className="text-base font-bold text-[#F4F3F7] truncate" suppressHydrationWarning>
                 {providerName}
               </h1>
               <span className="size-3.5 rounded-full bg-[#3DDC84]/16 border border-[#3DDC84]/45 text-[#3DDC84] font-bold text-[9px] flex items-center justify-center shrink-0">

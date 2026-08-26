@@ -359,7 +359,7 @@ export default function SurveyPage() {
 
             {/* Title & Question */}
             <div className="space-y-2">
-              <h1 className="text-[32px] leading-tight font-extrabold tracking-tight text-[#F4F3F7]">
+              <h1 className="text-[32px] leading-tight font-extrabold tracking-tight text-[#F4F3F7]" suppressHydrationWarning>
                 Una cosa más, {firstName}.
               </h1>
               <p className="text-[19px] leading-snug font-medium text-[#F4F3F7]/62">

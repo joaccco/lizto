@@ -153,6 +153,11 @@ const MOCK_AGENDA: Record<number, CalendarEventDisplay[]> = {
 export default function ProviderPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const [activeTab, setActiveTab] = useState<"jobs" | "calendar">("jobs");
   const [availability, setAvailability] = useState<"available" | "busy" | "unavailable">("available");
@@ -249,25 +254,24 @@ export default function ProviderPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [resRequests, resAgenda] = await Promise.all([
-        apiFetch<{ data: WorkRequestItem[] }>(ENDPOINTS.WORK_REQUESTS),
+      const [resReq, resWorks, resAgenda] = await Promise.all([
+        apiFetch<{ data: WorkRequestItem[] }>(ENDPOINTS.WORK_REQUESTS).catch(() => ({ data: [] })),
+        apiFetch<{ data: WorkRequestItem[] }>(ENDPOINTS.WORKS).catch(() => ({ data: [] })),
         apiFetch<{ data: AgendaEvent[]; pending_schedule?: AgendaEvent[] }>(ENDPOINTS.PROVIDER_AGENDA).catch(() => ({ data: [], pending_schedule: [] })),
       ]);
 
-      const items = resRequests.data || [];
-      const activeStatuses = ["confirmed", "in_progress", "pending_diagnosis_quote"];
+      setWorkRequests(resReq.data || []);
 
-      const pending = items.filter((i) => !activeStatuses.includes(i.status) && i.status !== "completed" && i.status !== "cancelled");
-      const activeList = items.filter((i) => activeStatuses.includes(i.status));
-      const historyList = items.filter((i) => i.status === "completed" || i.status === "cancelled");
+      const worksList = resWorks.data || [];
+      const activeList = worksList.filter((w) => w.status !== "completed" && w.status !== "cancelled");
+      const doneList = worksList.filter((w) => w.status === "completed" || w.status === "cancelled");
 
-      setWorkRequests(pending);
       setActiveWorks(activeList);
-      setHistoryWorks(historyList);
+      setHistoryWorks(doneList);
       setAgendaEvents(resAgenda.data || []);
       setPendingScheduleWorks(resAgenda.pending_schedule || []);
-    } catch {
-      // keep default
+    } catch (e) {
+      console.warn("Error fetching provider dashboard data:", e);
     } finally {
       setIsLoading(false);
     }
@@ -281,16 +285,25 @@ export default function ProviderPage() {
 
   const handleUpdateAvailability = async (newStatus: "available" | "busy" | "unavailable") => {
     setIsUpdatingAvailability(true);
-    setAvailability(newStatus);
     try {
       await apiFetch(ENDPOINTS.PROVIDER_AVAILABILITY, {
-        method: "POST",
-        body: JSON.stringify({ status: newStatus }),
+        method: "PUT",
+        body: JSON.stringify({ availability_status: newStatus }),
       });
+      setAvailability(newStatus);
     } catch {
-      // ignore
+      setAvailability(newStatus);
     } finally {
       setIsUpdatingAvailability(false);
+    }
+  };
+
+  const handleDeclineWork = async (requestId: string) => {
+    try {
+      await apiFetch(ENDPOINTS.WORK_DECLINE(requestId), { method: "POST" });
+      setWorkRequests((prev) => prev.filter((r) => r.id !== requestId));
+    } catch (err) {
+      setWorkRequests((prev) => prev.filter((r) => r.id !== requestId));
     }
   };
 
@@ -298,7 +311,7 @@ export default function ProviderPage() {
     if (!selectedRequest) return;
     setIsConfirming(true);
     try {
-      const payload: Record<string, any> = { estimated_duration_min: estimatedDuration };
+      const payload: any = { estimated_duration_min: estimatedDuration };
       if (scheduledDate) {
         payload.scheduled_at = scheduledDate;
       }
@@ -307,20 +320,14 @@ export default function ProviderPage() {
         body: JSON.stringify(payload),
       });
       setSelectedRequest(null);
+      setWorkRequests((prev) => prev.filter((r) => r.id !== selectedRequest.id));
       fetchData();
-    } catch {
+    } catch (err: any) {
+      console.error("Error al aceptar trabajo:", err);
       setSelectedRequest(null);
+      fetchData();
     } finally {
       setIsConfirming(false);
-    }
-  };
-
-  const handleDeclineWork = async (reqId: string) => {
-    try {
-      await apiFetch(ENDPOINTS.WORK_DECLINE(reqId), { method: "POST" });
-      fetchData();
-    } catch {
-      // ignore
     }
   };
 
@@ -333,8 +340,8 @@ export default function ProviderPage() {
     }
   };
 
-  const firstName = user?.name ? user.name.split(" ")[0] : "Roberto";
-  const userInitials = user?.name
+  const firstName = isMounted && user?.name ? user.name.split(" ")[0] : "Roberto";
+  const userInitials = isMounted && user?.name
     ? user.name
         .split(" ")
         .map((n) => n[0])
@@ -388,12 +395,17 @@ export default function ProviderPage() {
       <header className="sticky top-0 z-20 bg-[#08080A]/90 backdrop-blur-xl border-b border-white/9 px-4 py-4">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="size-11 rounded-2xl bg-[#7C5CFF] flex items-center justify-center font-bold text-white shadow-lg shadow-[#7C5CFF]/30 text-base">
+            <div
+              className="size-11 rounded-2xl bg-[#7C5CFF] flex items-center justify-center font-bold text-white shadow-lg shadow-[#7C5CFF]/30 text-base"
+              suppressHydrationWarning
+            >
               {userInitials}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-[#F4F3F7]">Hola, {firstName}</h1>
+                <h1 className="text-base font-bold text-[#F4F3F7]" suppressHydrationWarning>
+                  Hola, {firstName}
+                </h1>
                 <span className="inline-flex items-center gap-1 rounded-full bg-[#7C5CFF]/15 px-2 py-0.5 text-[10px] font-bold text-[#C4B5FD] border border-[#7C5CFF]/30">
                   <CheckCircle2 className="size-3 text-[#3DDC84]" /> PRO
                 </span>
