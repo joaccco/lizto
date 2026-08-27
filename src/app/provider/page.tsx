@@ -29,6 +29,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
 import { ENDPOINTS } from "@/lib/endpoints";
+import { requestPushNotificationPermissionAndRegister } from "@/lib/pushNotifications";
 
 const categoryIcons: Record<string, LucideIcon> = {
   cerrajeria: Lock,
@@ -285,6 +286,8 @@ export default function ProviderPage() {
 
   const handleUpdateAvailability = async (newStatus: "available" | "busy" | "unavailable") => {
     setIsUpdatingAvailability(true);
+    // Solicitud de permiso para notificaciones push en el gesto explícito de cambio de disponibilidad
+    requestPushNotificationPermissionAndRegister().catch(() => {});
     try {
       await apiFetch(ENDPOINTS.PROVIDER_AVAILABILITY, {
         method: "PUT",

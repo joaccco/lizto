@@ -7,6 +7,10 @@ interface MapPickerProps {
   initialLng?: number;
   initialAddress?: string;
   onLocationChange: (lat: number, lng: number, address: string) => void;
+  onConfirm?: () => void;
+  isSubmitting?: boolean;
+  onBack?: () => void;
+  fullScreen?: boolean;
 }
 
 const DynamicMapPickerContainer = dynamic(

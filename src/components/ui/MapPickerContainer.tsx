@@ -1,8 +1,6 @@
-"use client";
-
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, Navigation, Search, Check, Sparkles } from "lucide-react";
+import { MapPin, Navigation, Search, Sparkles, ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 
@@ -11,6 +9,10 @@ interface MapPickerContainerProps {
   initialLng?: number;
   initialAddress?: string;
   onLocationChange: (lat: number, lng: number, address: string) => void;
+  onConfirm?: () => void;
+  isSubmitting?: boolean;
+  onBack?: () => void;
+  fullScreen?: boolean;
 }
 
 // Icono Neón Personalizado de Alto Impacto para el Pin del Mapa
@@ -88,6 +90,10 @@ export default function MapPickerContainer({
   initialLng = -58.4306,
   initialAddress = "Thames 1842, Palermo, CABA",
   onLocationChange,
+  onConfirm,
+  isSubmitting = false,
+  onBack,
+  fullScreen = true,
 }: MapPickerContainerProps) {
   const [lat, setLat] = useState(initialLat);
   const [lng, setLng] = useState(initialLng);
@@ -117,7 +123,6 @@ export default function MapPickerContainer({
     async (newLat: number, newLng: number) => {
       setIsGeocoding(true);
 
-      // Intentar Nominatim u OpenStreetMap con timeout estricto de 2s
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2000);
@@ -142,7 +147,6 @@ export default function MapPickerContainer({
         // Fallback silencioso
       }
 
-      // Fallback estético garantizado con coordenadas
       const matchedPreset = NEIGHBORHOOD_PRESETS.find(
         (p) => Math.abs(p.lat - newLat) < 0.03 && Math.abs(p.lng - newLng) < 0.03
       );
@@ -196,7 +200,7 @@ export default function MapPickerContainer({
     }
 
     setIsLocating(true);
-    notifyStatus("Obteniendo señal GPS de tu casa...");
+    notifyStatus("Obteniendo señal GPS...");
 
     let hasResponded = false;
 
@@ -204,7 +208,7 @@ export default function MapPickerContainer({
       if (!hasResponded) {
         hasResponded = true;
         setIsLocating(false);
-        notifyStatus("Señal GPS demorada. Podés hacer clic en el mapa o buscar abajo.");
+        notifyStatus("Señal GPS demorada. Podés hacer clic en el mapa.");
       }
     }, 4000);
 
@@ -228,9 +232,9 @@ export default function MapPickerContainer({
         setIsLocating(false);
 
         if (error.code === error.PERMISSION_DENIED) {
-          notifyStatus("Permiso GPS denegado. Tocá el mapa o elegí en la lista.");
+          notifyStatus("Permiso GPS denegado. Tocá el mapa para fijar el pin.");
         } else {
-          notifyStatus("No se pudo obtener señal GPS. Tocá el mapa para fijar el pin.");
+          notifyStatus("No se pudo obtener señal GPS. Tocá el mapa.");
         }
       },
       {
@@ -269,52 +273,16 @@ export default function MapPickerContainer({
   };
 
   return (
-    <div className="space-y-4 w-full">
-      {/* Encabezado y Botón GPS */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1 text-[11px] font-mono tracking-wider uppercase text-[#C4B5FD] font-semibold px-2.5 py-0.5 rounded-full bg-[#7C5CFF]/15 border border-[#7C5CFF]/30">
-              <Sparkles className="size-3 text-[#A8FF35]" />
-              Pin Interactivo Google Maps Style
-            </span>
-          </div>
-          <h3 className="text-[20px] font-extrabold text-[#F4F3F7] tracking-tight">
-            ¿Dónde es el servicio?
-          </h3>
-          <p className="text-xs text-zinc-400 font-medium mt-0.5">
-            Tocá en cualquier lugar del mapa o arrastrá el pin neón a la puerta de tu casa
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleUseCurrentLocation}
-          disabled={isLocating}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-b from-white/14 to-white/[0.05] backdrop-blur-md border border-white/18 text-xs font-bold text-[#F4F3F7] shadow-lg shrink-0 hover:bg-white/20 active:scale-95 transition cursor-pointer"
-        >
-          <Navigation className={`size-4 text-[#A8FF35] ${isLocating ? "animate-spin" : ""}`} />
-          <span>{isLocating ? "Obteniendo..." : "Mi ubicación"}</span>
-        </button>
-      </div>
-
-      {/* Banner de Notificación Flotante */}
-      {statusMessage && (
-        <div className="rounded-xl border border-[#7C5CFF]/40 bg-[#7C5CFF]/12 backdrop-blur-md px-3.5 py-2 text-xs font-semibold text-[#D8B4FE] animate-in fade-in duration-200 flex items-center gap-2 shadow-md">
-          <span className="size-1.5 rounded-full bg-[#A8FF35] animate-pulse shrink-0" />
-          <span>{statusMessage}</span>
-        </div>
-      )}
-
-      {/* MAPA INTERACTIVO REAL: CLIC DIRECTO Y PIN ARRASTRABLE 100% OPERATIVO */}
-      <div className="relative h-72 w-full overflow-hidden rounded-[24px] border border-white/16 shadow-2xl bg-[#0d0d12]">
+    <div className="fixed inset-0 z-40 flex flex-col h-dvh w-screen overflow-hidden bg-[#0d0d12]">
+      {/* MAPA INTERACTIVO A PANTALLA COMPLETA 100% VIEWPORT */}
+      <div className="absolute inset-0 z-0 h-full w-full">
         <MapContainer
           center={[lat, lng]}
           zoom={16}
           scrollWheelZoom={true}
           className="h-full w-full z-0 cursor-crosshair"
         >
-          {/* Capa de Satélite Real Google Maps HD (Predefinida) */}
+          {/* Capa de Satélite Real Google Maps HD */}
           <TileLayer
             attribution='&copy; <a href="https://www.google.com/maps">Google Maps</a>'
             url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
@@ -330,44 +298,130 @@ export default function MapPickerContainer({
             icon={customPinIcon}
           />
 
-          {/* Escuchador de Clics Directos en el Mapa */}
           <MapEvents onSelectCoords={handleSelectCoords} />
           <RecenterMap lat={lat} lng={lng} />
         </MapContainer>
-
-        {/* Chip Flotante Informativo sobre el Mapa */}
-        <div className="absolute top-3 left-3 z-[400] rounded-xl bg-[#08080A]/88 backdrop-blur-md px-3.5 py-1.5 text-[11px] font-semibold text-[#F4F3F7] shadow-md border border-white/15 flex items-center gap-2 pointer-events-none">
-          <MapPin className="size-3.5 text-[#A8FF35]" />
-          <span>Tocá cualquier punto del mapa para fijar el pin o arrastralo</span>
-        </div>
       </div>
 
-      {/* Campo de Confirmación de Dirección Seleccionada */}
-      <div className="space-y-1.5">
-        <label className="block text-[10.5px] font-mono tracking-wider uppercase text-zinc-400 font-semibold">
-          Dirección confirmada para la visita
-        </label>
-        <div className="flex items-center gap-3 rounded-[18px] border border-white/12 bg-white/6 p-3.5 shadow-md focus-within:border-[#7C5CFF] focus-within:ring-1 focus-within:ring-[#7C5CFF] transition">
-          <div className="size-8 rounded-lg bg-[#7C5CFF]/15 text-[#8B6BFF] flex items-center justify-center shrink-0 font-bold">
-            <MapPin className="size-4 text-[#A8FF35]" />
-          </div>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => {
-              const newAddr = e.target.value;
-              setAddress(newAddr);
-              onLocationChange(lat, lng, newAddr);
-            }}
-            placeholder="Ej: Thames 1842, Palermo, CABA"
-            className="w-full bg-transparent text-sm font-semibold text-[#F4F3F7] outline-none placeholder-zinc-500"
-          />
-          {isGeocoding && (
-            <span className="text-[10px] font-mono text-[#A78BFA] animate-pulse shrink-0 font-medium">
-              Obteniendo...
-            </span>
+      {/* CONTROLES FLOTANTES SUPERPUESTOS EN LA PARTE SUPERIOR */}
+      <div className="absolute top-4 left-4 right-4 z-[500] flex flex-col gap-2 pointer-events-auto">
+        <div className="flex items-center justify-between gap-2.5 p-2 rounded-[22px] bg-[#08080A]/85 backdrop-blur-xl border border-white/14 shadow-2xl">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex size-10 items-center justify-center rounded-xl bg-white/6 hover:bg-white/12 text-zinc-300 hover:text-white transition cursor-pointer shrink-0"
+              title="Volver"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
           )}
+
+          <div className="flex-1 min-w-0 px-1">
+            <h3 className="text-xs font-extrabold text-[#F4F3F7] truncate">
+              ¿Dónde es el servicio?
+            </h3>
+            <p className="text-[11px] text-zinc-400 font-medium truncate">
+              Tocá el mapa o arrastrá el pin neón
+            </p>
+          </div>
+
+          {/* Botón para centrar en ubicación GPS actual */}
+          <button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            disabled={isLocating}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#7C5CFF]/20 hover:bg-[#7C5CFF]/35 border border-[#7C5CFF]/40 text-xs font-bold text-[#F4F3F7] shadow-lg shrink-0 transition cursor-pointer"
+            title="Usar mi ubicación GPS"
+          >
+            <Navigation className={`size-3.5 text-[#A8FF35] ${isLocating ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">{isLocating ? "Ubicando..." : "Mi ubicación"}</span>
+          </button>
         </div>
+
+        {/* Barra de Búsqueda de Ubicación Flotante */}
+        <form onSubmit={handleSearchSubmit} className="relative w-full">
+          <div className="relative flex items-center">
+            <Search className="absolute left-3.5 size-4 text-zinc-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar calle y número (ej: Thames 1842, Palermo)..."
+              className="w-full h-11 pl-10 pr-24 rounded-2xl border border-white/14 bg-[#08080A]/85 backdrop-blur-xl text-xs text-[#F4F3F7] placeholder-zinc-500 focus:outline-none focus:border-[#7C5CFF] shadow-2xl transition"
+            />
+            <button
+              type="submit"
+              className="absolute right-1.5 px-3 py-1.5 rounded-xl bg-[#7C5CFF] hover:bg-[#6b47ff] text-[11px] font-bold text-white transition cursor-pointer"
+            >
+              Ir
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Banner de Notificación Flotante */}
+      {statusMessage && (
+        <div className="absolute top-36 left-4 right-4 z-[500] rounded-xl border border-[#7C5CFF]/40 bg-[#08080A]/90 backdrop-blur-md px-3.5 py-2 text-xs font-semibold text-[#D8B4FE] animate-in fade-in duration-200 flex items-center gap-2 shadow-xl pointer-events-none">
+          <span className="size-1.5 rounded-full bg-[#A8FF35] animate-pulse shrink-0" />
+          <span>{statusMessage}</span>
+        </div>
+      )}
+
+      {/* Chip Flotante Informativo en el Mapa */}
+      <div className="absolute top-36 left-4 z-[450] rounded-xl bg-[#08080A]/80 backdrop-blur-md px-3 py-1 text-[10.5px] font-semibold text-[#F4F3F7] shadow-md border border-white/12 flex items-center gap-1.5 pointer-events-none hidden sm:flex">
+        <MapPin className="size-3 text-[#A8FF35]" />
+        <span>Arrastrá el pin a tu puerta</span>
+      </div>
+
+      {/* CONTROLES FLOTANTES SUPERPUESTOS EN LA PARTE INFERIOR (DIRECCIÓN Y CONFIRMACIÓN) */}
+      <div className="absolute bottom-4 left-4 right-4 z-[500] space-y-3 pointer-events-auto">
+        {/* Capa superpuesta con dirección resuelta */}
+        <div className="rounded-[22px] border border-white/14 bg-[#08080A]/88 backdrop-blur-xl p-3.5 shadow-2xl space-y-1">
+          <label className="block text-[10px] font-mono tracking-wider uppercase text-zinc-400 font-semibold">
+            Dirección confirmada para la visita
+          </label>
+          <div className="flex items-center gap-2.5">
+            <div className="size-7 rounded-lg bg-[#7C5CFF]/20 text-[#8B6BFF] flex items-center justify-center shrink-0 font-bold">
+              <MapPin className="size-4 text-[#A8FF35]" />
+            </div>
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => {
+                const newAddr = e.target.value;
+                setAddress(newAddr);
+                onLocationChange(lat, lng, newAddr);
+              }}
+              placeholder="Ej: Thames 1842, Palermo, CABA"
+              className="w-full bg-transparent text-xs font-semibold text-[#F4F3F7] outline-none placeholder-zinc-500"
+            />
+            {isGeocoding && (
+              <span className="text-[10px] font-mono text-[#A78BFA] animate-pulse shrink-0 font-medium">
+                Obteniendo...
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Botón de confirmación siempre visible sin desplazar */}
+        {onConfirm && (
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isSubmitting}
+            className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[18px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-sm font-bold text-white transition shadow-[0_14px_38px_rgba(124,92,255,0.5)] cursor-pointer disabled:opacity-60"
+          >
+            {isSubmitting ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <>
+                <span>Finalizar y buscar profesionales</span>
+                <ChevronRight className="size-5" />
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

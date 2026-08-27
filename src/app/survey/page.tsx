@@ -313,40 +313,27 @@ export default function SurveyPage() {
           </div>
         )}
 
-        {/* MAP STEP */}
+        {/* MAP STEP — A PANTALLA COMPLETA 100% VIEWPORT */}
         {showMapStep ? (
-          <div className="space-y-6 pt-2">
-            <MapPicker
-              initialLat={locationLat}
-              initialLng={locationLng}
-              initialAddress={locationAddress}
-              onLocationChange={(newLat, newLng, newAddr) => {
-                setLocationLat(newLat);
-                setLocationLng(newLng);
-                setLocationAddress(newAddr);
-                if (typeof window !== "undefined") {
-                  sessionStorage.setItem("location_lat", String(newLat));
-                  sessionStorage.setItem("location_lng", String(newLng));
-                  sessionStorage.setItem("location_address", newAddr);
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => handleNextStep()}
-              disabled={isSubmitting}
-              className="flex h-[56px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-base font-bold text-white transition shadow-[0_14px_38px_rgba(124,92,255,0.45)] cursor-pointer disabled:opacity-60"
-            >
-              {isSubmitting ? (
-                <Loader2 className="size-5 animate-spin" />
-              ) : (
-                <>
-                  <span>Finalizar y buscar profesionales</span>
-                  <ChevronRight className="size-5" />
-                </>
-              )}
-            </button>
-          </div>
+          <MapPicker
+            initialLat={locationLat}
+            initialLng={locationLng}
+            initialAddress={locationAddress}
+            onLocationChange={(newLat, newLng, newAddr) => {
+              setLocationLat(newLat);
+              setLocationLng(newLng);
+              setLocationAddress(newAddr);
+              if (typeof window !== "undefined") {
+                sessionStorage.setItem("location_lat", String(newLat));
+                sessionStorage.setItem("location_lng", String(newLng));
+                sessionStorage.setItem("location_address", newAddr);
+              }
+            }}
+            onConfirm={() => handleNextStep()}
+            isSubmitting={isSubmitting}
+            onBack={() => setShowMapStep(false)}
+            fullScreen={true}
+          />
         ) : currentQuestion ? (
           <>
             {/* System Label */}

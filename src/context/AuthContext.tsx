@@ -132,6 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     setIsLoading(true);
     try {
+      const { unregisterPushDeviceToken } = await import("@/lib/pushNotifications");
+      await unregisterPushDeviceToken();
       await apiFetch(ENDPOINTS.LOGOUT, { method: "POST" });
     } catch {
       // Ignorar errores de logout

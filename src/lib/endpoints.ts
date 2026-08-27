@@ -47,4 +47,8 @@ export const ENDPOINTS = {
   WORK_REQUESTS: "/provider/work-requests",
   WORK_CONFIRM: (id: string) => `/provider/work-requests/${id}/confirm`,
   WORK_DECLINE: (id: string) => `/provider/work-requests/${id}/decline`,
+
+  // User Devices (Push Notifications)
+  USER_DEVICES: "/user/devices",
+  USER_DEVICE_DELETE: (token: string) => `/user/devices/${token}`,
 } as const;
