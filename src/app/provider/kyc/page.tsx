@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
-import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { KycStatusDisplay } from "@/components/provider/kyc/KycStatusDisplay";
-import { KycUploadForm } from "@/components/provider/kyc/KycUploadForm";
-import { ScreenShell } from "@/components/screens/shared/ScreenShell";
+import { KycStep01_Status } from "@/components/provider/kyc/KycStep01_Status";
+import { KycStep02_Upload } from "@/components/provider/kyc/KycStep02_Upload";
+import { KycStep03_Confirmation } from "@/components/provider/kyc/KycStep03_Confirmation";
+import { ProviderBottomNav } from "@/components/provider/kyc/ProviderBottomNav";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
 import { ENDPOINTS } from "@/lib/endpoints";
@@ -16,6 +16,7 @@ export default function ProviderKycPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [kycStatus, setKycStatus] = useState<KycStatus>("unverified");
   const [documents, setDocuments] = useState<KycDocumentItem[]>([]);
   const [rejectionReasons, setRejectionReasons] = useState<KycRejectionReason[]>([]);
@@ -47,7 +48,6 @@ export default function ProviderKycPage() {
         setRejectionReasons(res.rejection_reasons || []);
       }
     } catch {
-      // Fallback a unverified en error de red
       setKycStatus("unverified");
     } finally {
       setIsLoading(false);
@@ -61,47 +61,52 @@ export default function ProviderKycPage() {
   }, [isAuthenticated]);
 
   return (
-    <div className="min-h-screen bg-[#08080A] text-[#F4F3F7] font-sans pb-24">
-      {/* HEADER DE NAVEGACIÓN */}
-      <header className="sticky top-0 z-20 bg-[#08080A]/90 backdrop-blur-xl border-b border-white/9 px-4 py-4">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <Link
-            href="/provider"
-            className="flex size-10 items-center justify-center rounded-xl bg-white/6 hover:bg-white/12 text-zinc-300 hover:text-white transition border border-white/8 cursor-pointer"
-            title="Volver al panel"
-          >
-            <ArrowLeft className="size-5" />
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="size-5 text-[#8B6BFF]" />
-            <h1 className="text-sm font-extrabold text-[#F4F3F7]">Verificación de Identidad (KYC)</h1>
-          </div>
-
-          <div className="size-10" />
-        </div>
-      </header>
-
-      <ScreenShell className="pt-5 space-y-6">
+    <div className="w-full min-h-screen bg-[#08080A] text-[#F4F3F7] font-sans flex flex-col items-center">
+      {/* CONTENEDOR PRINCIPAL MOBILE-FIRST (MÁXIMO 390PX) */}
+      <main className="w-full max-w-[390px] min-h-screen px-4 flex flex-col justify-between pb-[88px] relative">
         {isLoading ? (
-          <div className="flex py-16 justify-center items-center">
+          <div className="flex-1 flex flex-col justify-center items-center py-24 space-y-3">
             <Loader2 className="size-8 animate-spin text-[#8B6BFF]" />
+            <p className="text-xs text-zinc-400 font-mono">Cargando estado...</p>
           </div>
         ) : (
           <>
-            {/* ESTADO GENERAL Y DOCUMENTOS EXISTENTES */}
-            <KycStatusDisplay
-              status={kycStatus}
-              documents={documents}
-              rejectionReasons={rejectionReasons}
-              onDocumentDeleted={fetchKycStatus}
-            />
+            {step === 1 && (
+              <KycStep01_Status
+                status={kycStatus}
+                documents={documents}
+                rejectionReasons={rejectionReasons}
+                onNext={() => setStep(2)}
+                onRefresh={fetchKycStatus}
+                isLoading={isLoading}
+              />
+            )}
 
-            {/* FORMULARIO DE SUBIDA (Siempre disponible para sumar o reintentar documentos) */}
-            <KycUploadForm onUploadSuccess={fetchKycStatus} />
+            {step === 2 && (
+              <KycStep02_Upload
+                onNext={() => {
+                  fetchKycStatus();
+                  setStep(3);
+                }}
+                onBack={() => setStep(1)}
+                onSuccess={fetchKycStatus}
+              />
+            )}
+
+            {step === 3 && (
+              <KycStep03_Confirmation
+                onDone={() => {
+                  fetchKycStatus();
+                  setStep(1);
+                }}
+              />
+            )}
           </>
         )}
-      </ScreenShell>
+
+        {/* BOTTOM NAVIGATION PRESENTE EN LOS 3 PASOS */}
+        <ProviderBottomNav />
+      </main>
     </div>
   );
 }
