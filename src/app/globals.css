@@ -109,6 +109,31 @@
   50% { box-shadow: 0 0 0 14px rgba(168,255,53,0), 0 0 64px rgba(168,255,53,0.28); }
 }
 
+@keyframes popIn {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-popIn {
+  animation: popIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.animate-glowPulse {
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.03) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
 @layer base {
   * {
     border-color: var(--border);

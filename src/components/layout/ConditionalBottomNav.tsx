@@ -5,9 +5,9 @@ import { BottomNav } from "@/components/layout/BottomNav";
 
 export function ConditionalBottomNav() {
   const pathname = usePathname();
-  const hideOnPaths = ["/login", "/register", "/survey", "/work-confirmed", "/provider"];
+  const hideExactPaths = ["/login", "/register", "/survey", "/work-confirmed"];
 
-  if (hideOnPaths.includes(pathname)) {
+  if (hideExactPaths.includes(pathname) || pathname.startsWith("/provider")) {
     return null;
   }
 
