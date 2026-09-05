@@ -47,8 +47,15 @@ export const ENDPOINTS = {
   WORK_REQUESTS: "/provider/work-requests",
   WORK_CONFIRM: (id: string) => `/provider/work-requests/${id}/confirm`,
   WORK_DECLINE: (id: string) => `/provider/work-requests/${id}/decline`,
+  WORK_QUOTES: (id: string) => `/works/${id}/quotes`,
 
   // User Devices (Push Notifications)
   USER_DEVICES: "/user/devices",
   USER_DEVICE_DELETE: (token: string) => `/user/devices/${token}`,
+
+  // KYC (Know Your Customer)
+  KYC_DOCUMENTS: "/kyc/documents",
+  KYC_STATUS: "/kyc/status",
+  KYC_SIGNED_URL: (uuid: string) => `/kyc/documents/${uuid}/signed-url`,
+  KYC_DOCUMENT_DELETE: (uuid: string) => `/kyc/documents/${uuid}`,
 } as const;

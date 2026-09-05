@@ -168,4 +168,45 @@ export interface AuthResponse {
   message: string;
 }
 
+// KYC (Know Your Customer) Types
+export type KycStatus = "unverified" | "pending" | "verified" | "rejected";
+
+export type KycDocumentType =
+  | "identity"
+  | "dni_front"
+  | "dni_back"
+  | "selfie"
+  | "driver_license"
+  | "passport"
+  | "professional_license"
+  | "certificate"
+  | "other";
+
+export interface KycDocumentItem {
+  document_id: string;
+  document_type: KycDocumentType | string;
+  status: string;
+  verified_at?: string | null;
+  created_at?: string | null;
+}
+
+export interface KycRejectionReason {
+  document_type: string;
+  reason: string;
+}
+
+export interface KycStatusResponse {
+  kyc_status: KycStatus;
+  documents: KycDocumentItem[];
+  rejection_reasons: KycRejectionReason[];
+}
+
+export interface KycUploadResponse {
+  document_id: string;
+  document_type: string;
+  status: string;
+  created_at?: string;
+}
+
+
 

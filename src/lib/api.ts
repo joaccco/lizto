@@ -15,13 +15,37 @@ export async function apiFetch<T>(
   const { headers: optionHeaders, ...restOptions } = options || {};
 
   try {
+    let correlationId: string | undefined;
+
+    if (optionHeaders && typeof optionHeaders === "object") {
+      correlationId = (optionHeaders as Record<string, string>)["X-Correlation-ID"];
+    }
+
+    if (!correlationId) {
+      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        correlationId = crypto.randomUUID();
+      } else {
+        correlationId = "web_" + Math.random().toString(36).substring(2, 15);
+      }
+    }
+
+    const isFormData = typeof FormData !== "undefined" && restOptions.body instanceof FormData;
+
+    const baseHeaders: Record<string, string> = {
+      Accept: "application/json",
+      "X-Correlation-ID": correlationId,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    if (!isFormData) {
+      baseHeaders["Content-Type"] = "application/json";
+    }
+
     const res = await fetch(`${API_URL}${endpoint}`, {
       signal: controller.signal,
       ...restOptions,
       headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...baseHeaders,
         ...optionHeaders,
       },
     });
