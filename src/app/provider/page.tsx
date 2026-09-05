@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertTriangle,
   Brush,
   Calculator,
   Calendar as CalendarIcon,
@@ -17,6 +18,8 @@ import {
   MapPin,
   MessageSquare,
   Scale,
+  ShieldAlert,
+  ShieldCheck,
   Sparkles,
   UserCheck,
   Zap,
@@ -30,6 +33,7 @@ import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
 import { ENDPOINTS } from "@/lib/endpoints";
 import { requestPushNotificationPermissionAndRegister } from "@/lib/pushNotifications";
+import type { KycStatus, KycStatusResponse } from "@/lib/types";
 
 const categoryIcons: Record<string, LucideIcon> = {
   cerrajeria: Lock,
@@ -120,36 +124,7 @@ interface CalendarEventDisplay {
   status: string;
 }
 
-const MOCK_AGENDA: Record<number, CalendarEventDisplay[]> = {
-  15: [
-    {
-      id: "ev-1",
-      time: "09:30",
-      clientName: "Juan Pérez",
-      jobType: "Cambio de combinación de cerradura",
-      address: "Av. Corrientes 1240, CABA",
-      status: "confirmed",
-    },
-    {
-      id: "ev-2",
-      time: "14:00",
-      clientName: "María García",
-      jobType: "Apertura de puerta blindada trabada",
-      address: "Thames 1842, Palermo",
-      status: "in_progress",
-    },
-  ],
-  18: [
-    {
-      id: "ev-3",
-      time: "11:00",
-      clientName: "Carlos López",
-      jobType: "Instalación de cerradura digital inteligente",
-      address: "Av. Santa Fe 3400, Recoleta",
-      status: "confirmed",
-    },
-  ],
-};
+
 
 export default function ProviderPage() {
   const router = useRouter();
@@ -163,6 +138,7 @@ export default function ProviderPage() {
   const [activeTab, setActiveTab] = useState<"jobs" | "calendar">("jobs");
   const [availability, setAvailability] = useState<"available" | "busy" | "unavailable">("available");
   const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false);
+  const [kycStatus, setKycStatus] = useState<KycStatus | null>(null);
 
   const [workRequests, setWorkRequests] = useState<WorkRequestItem[]>([]);
   const [activeWorks, setActiveWorks] = useState<WorkRequestItem[]>([]);
@@ -255,10 +231,11 @@ export default function ProviderPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [resReq, resWorks, resAgenda] = await Promise.all([
+      const [resReq, resWorks, resAgenda, resKyc] = await Promise.all([
         apiFetch<{ data: WorkRequestItem[] }>(ENDPOINTS.WORK_REQUESTS).catch(() => ({ data: [] })),
         apiFetch<{ data: WorkRequestItem[] }>(ENDPOINTS.WORKS).catch(() => ({ data: [] })),
         apiFetch<{ data: AgendaEvent[]; pending_schedule?: AgendaEvent[] }>(ENDPOINTS.PROVIDER_AGENDA).catch(() => ({ data: [], pending_schedule: [] })),
+        apiFetch<KycStatusResponse>(ENDPOINTS.KYC_STATUS).catch(() => null),
       ]);
 
       setWorkRequests(resReq.data || []);
@@ -271,6 +248,10 @@ export default function ProviderPage() {
       setHistoryWorks(doneList);
       setAgendaEvents(resAgenda.data || []);
       setPendingScheduleWorks(resAgenda.pending_schedule || []);
+
+      if (resKyc && resKyc.kyc_status) {
+        setKycStatus(resKyc.kyc_status);
+      }
     } catch (e) {
       console.warn("Error fetching provider dashboard data:", e);
     } finally {
@@ -343,7 +324,7 @@ export default function ProviderPage() {
     }
   };
 
-  const firstName = isMounted && user?.name ? user.name.split(" ")[0] : "Roberto";
+  const firstName = isMounted && user?.name ? user.name.split(" ")[0] : "";
   const userInitials = isMounted && user?.name
     ? user.name
         .split(" ")
@@ -351,7 +332,7 @@ export default function ProviderPage() {
         .join("")
         .substring(0, 2)
         .toUpperCase()
-    : "RM";
+    : "PRO";
 
   const daysWithEvents = useMemo(() => {
     const set = new Set<number>();
@@ -382,14 +363,7 @@ export default function ProviderPage() {
       }));
     }
 
-    return (MOCK_AGENDA[selectedDay] || []).map((ev) => ({
-      id: ev.id,
-      time: ev.time,
-      clientName: ev.clientName,
-      jobType: ev.jobType,
-      address: ev.address,
-      status: ev.status,
-    }));
+    return [];
   }, [agendaEvents, currentDate, selectedDay]);
 
   return (
@@ -407,11 +381,25 @@ export default function ProviderPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base font-bold text-[#F4F3F7]" suppressHydrationWarning>
-                  Hola, {firstName}
+                  Hola{firstName ? `, ${firstName}` : ""}
                 </h1>
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#7C5CFF]/15 px-2 py-0.5 text-[10px] font-bold text-[#C4B5FD] border border-[#7C5CFF]/30">
-                  <CheckCircle2 className="size-3 text-[#3DDC84]" /> PRO
-                </span>
+                {kycStatus === "verified" ? (
+                  <Link
+                    href="/provider/kyc"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#3DDC84]/15 px-2 py-0.5 text-[10px] font-bold text-[#3DDC84] border border-[#3DDC84]/30 hover:bg-[#3DDC84]/25 transition"
+                    title="Identidad Verificada"
+                  >
+                    <CheckCircle2 className="size-3 text-[#3DDC84]" /> PRO Verificado
+                  </Link>
+                ) : (
+                  <Link
+                    href="/provider/kyc"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#7C5CFF]/15 px-2 py-0.5 text-[10px] font-bold text-[#C4B5FD] border border-[#7C5CFF]/30 hover:bg-[#7C5CFF]/25 transition"
+                    title="Configurar verificación KYC"
+                  >
+                    <CheckCircle2 className="size-3 text-[#A8FF35]" /> PRO
+                  </Link>
+                )}
               </div>
               <p className="text-xs text-zinc-400 font-medium">Panel de Profesional</p>
             </div>
@@ -440,6 +428,73 @@ export default function ProviderPage() {
       </header>
 
       <main className="max-w-md mx-auto px-4 pt-4 space-y-6">
+        {/* BANNER DE ESTADO KYC SI NO ESTÁ VERIFICADO */}
+        {kycStatus === "unverified" && (
+          <div className="rounded-[20px] bg-gradient-to-r from-[#F2B441]/20 via-[#F2B441]/10 to-transparent border border-[#F2B441]/35 p-4 flex items-center justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="size-9 rounded-xl bg-[#F2B441]/20 border border-[#F2B441]/40 flex items-center justify-center text-[#F2B441] shrink-0">
+                <ShieldAlert className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-[#F4F3F7]">Verificación de Identidad Requerida</h4>
+                <p className="text-[11px] text-zinc-400 truncate">
+                  Subí tus documentos para activar tu cuenta y recibir trabajos.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/provider/kyc"
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-[#F2B441] hover:bg-[#e0a435] text-[11px] font-extrabold text-black transition shadow-sm"
+            >
+              Verificar →
+            </Link>
+          </div>
+        )}
+
+        {kycStatus === "pending" && (
+          <div className="rounded-[20px] bg-gradient-to-r from-[#7C5CFF]/20 via-[#7C5CFF]/10 to-transparent border border-[#7C5CFF]/35 p-4 flex items-center justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="size-9 rounded-xl bg-[#7C5CFF]/20 border border-[#7C5CFF]/40 flex items-center justify-center text-[#C4B5FD] shrink-0">
+                <Clock className="size-4 text-[#A8FF35]" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-[#F4F3F7]">Documentos en Revisión</h4>
+                <p className="text-[11px] text-zinc-400 truncate">
+                  Estamos auditando tu información. Te avisaremos pronto.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/provider/kyc"
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-[11px] font-bold text-white border border-white/14 transition"
+            >
+              Ver estado →
+            </Link>
+          </div>
+        )}
+
+        {kycStatus === "rejected" && (
+          <div className="rounded-[20px] bg-gradient-to-r from-[#FF5A5A]/20 via-[#FF5A5A]/10 to-transparent border border-[#FF5A5A]/45 p-4 flex items-center justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="size-9 rounded-xl bg-[#FF5A5A]/20 border border-[#FF5A5A]/40 flex items-center justify-center text-[#FF5A5A] shrink-0">
+                <AlertTriangle className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-[#F4F3F7]">Documentación Observada</h4>
+                <p className="text-[11px] text-zinc-400 truncate">
+                  Uno o más documentos fueron rechazados. Revisá los motivos.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/provider/kyc"
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-[#FF5A5A] hover:bg-red-600 text-[11px] font-extrabold text-white transition shadow-sm"
+            >
+              Corregir →
+            </Link>
+          </div>
+        )}
+
         {/* NAVEGACIÓN DE TABS */}
         <div className="flex gap-1.5 p-1.5 rounded-[16px] bg-white/5 border border-white/9">
           <button
