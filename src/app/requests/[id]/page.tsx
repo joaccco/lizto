@@ -106,17 +106,6 @@ export default function RequestDetailPage() {
             urgency: "immediate",
             address: "Córdoba 456, Corrientes",
             conversation_id: "bc868afe-8537-4926-8070-0530a5234418",
-            accepted_provider: {
-              name: "Roberto Medina",
-              bio: "Cerrajero matriculado con 12 años de experiencia. Especialista en aperturas sin daño y urgencias 24hs.",
-              avg_rating: 4.9,
-              total_reviews: 87,
-              total_jobs_completed: 124,
-              years_experience: 12,
-              is_verified: true,
-              specialties: ["Aperturas", "Reemplazo", "Seguridad", "Urgencias"],
-              response_time: "~8 min",
-            },
             created_at: new Date().toISOString(),
           });
         }
@@ -130,17 +119,6 @@ export default function RequestDetailPage() {
           urgency: "immediate",
           address: "Córdoba 456, Corrientes",
           conversation_id: "bc868afe-8537-4926-8070-0530a5234418",
-          accepted_provider: {
-            name: "Roberto Medina",
-            bio: "Cerrajero matriculado con 12 años de experiencia. Especialista en aperturas sin daño y urgencias 24hs.",
-            avg_rating: 4.9,
-            total_reviews: 87,
-            total_jobs_completed: 124,
-            years_experience: 12,
-            is_verified: true,
-            specialties: ["Aperturas", "Reemplazo", "Seguridad", "Urgencias"],
-            response_time: "~8 min",
-          },
           created_at: new Date().toISOString(),
         });
       } finally {
@@ -203,7 +181,7 @@ export default function RequestDetailPage() {
   }
 
   const activeProvider = requestDetail.accepted_provider || storedProviderObj;
-  const providerName = activeProvider?.name || "Carlos Gómez";
+  const providerName = activeProvider?.name || "el profesional";
   const conversationId = requestDetail.conversation_id || "bc868afe-8537-4926-8070-0530a5234418";
 
   return (

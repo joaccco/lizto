@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function HomePage() {
   const { user } = useAuth();
-  const firstName = user?.name ? user.name.split(" ")[0] : "María";
+  const firstName = user?.name ? user.name.split(" ")[0] : "";
   const [activeRequest, setActiveRequest] = useState<ActiveRequestItem | null>(null);
   const [isChecking, setIsChecking] = useState(true);
 

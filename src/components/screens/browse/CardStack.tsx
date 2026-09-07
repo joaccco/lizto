@@ -29,41 +29,43 @@ interface ProviderCardContentProps {
 
 function ProviderCardContent({ provider, onAccept, onOpenProfile }: ProviderCardContentProps) {
   const [imageError, setImageError] = useState(false);
-  const matchPct = (provider as any).score ? Math.round((provider as any).score * 100) : 94;
 
   return (
-    <>
-      <div className="relative h-[160px] overflow-hidden bg-[#17171E] flex items-center justify-center border-b border-white/7">
+    <div className="flex flex-col h-full w-full justify-between">
+      {/* 1. Header con foto de perfil ampliada (210px) */}
+      <div className="relative h-[210px] w-full shrink-0 overflow-hidden bg-[#17171E] flex items-center justify-center border-b border-white/8">
         {!imageError && provider.photo ? (
           <Image
             src={provider.photo}
             alt={`Foto de perfil de ${provider.name}`}
             fill
             sizes="(max-width: 480px) 100vw, 440px"
-            className="object-cover object-[center_32%]"
+            className="object-cover object-center"
             priority={provider.id === "1"}
             onError={() => setImageError(true)}
           />
         ) : (
           <div className="flex flex-col items-center gap-1 text-zinc-500">
-            <User className="size-8" />
+            <User className="size-10 text-zinc-400" />
             <span className="text-[11px] font-mono tracking-wider uppercase text-zinc-500">
               foto verificada
             </span>
           </div>
         )}
-        <span className="absolute left-4 bottom-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#08080A]/70 backdrop-blur-md border border-[#A8FF35]/35 text-[#A8FF35] text-[11.5px] font-semibold">
+        <div className="absolute inset-0 bg-gradient-to-t from-[#131318] via-transparent to-transparent opacity-85" />
+        <span className="absolute left-3.5 bottom-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#08080A]/75 backdrop-blur-md border border-[#A8FF35]/40 text-[#A8FF35] text-[11px] font-semibold">
           <span className="size-1.5 rounded-full bg-[#A8FF35]" />
           Disponible hoy
         </span>
       </div>
 
-      <div className="p-4 space-y-3">
-        {/* Name, rating, verification */}
+      {/* 2. Cuerpo de la tarjeta con distribución vertical uniforme */}
+      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+        {/* Nombre, rubro, verificado y calificación */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <h3 className="truncate text-[19px] leading-snug font-bold tracking-tight text-[#F4F3F7]">
+              <h3 className="truncate text-[20px] leading-snug font-extrabold tracking-tight text-[#F4F3F7]">
                 {provider.name}
               </h3>
               {provider.isVerified !== false && (
@@ -72,57 +74,57 @@ function ProviderCardContent({ provider, onAccept, onOpenProfile }: ProviderCard
                 </span>
               )}
             </div>
-            <p className="text-[13px] text-zinc-400 font-medium">
+            <p className="text-xs text-zinc-400 font-medium">
               {provider.category || provider.specialties?.[0] || "Profesional verificado"}
             </p>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-[15px] font-bold text-[#F4F3F7]">
+            <div className="text-[15px] font-extrabold text-[#F4F3F7]">
               ★ {provider.rating.toFixed(1)}
             </div>
-            <div className="text-[11px] font-mono text-zinc-500 mt-0.5">
+            <div className="text-[10.5px] font-mono text-zinc-500 mt-0.5">
               {provider.reviewCount || 87} reseñas
             </div>
           </div>
         </div>
 
-        {/* Bio */}
-        <p className="line-clamp-2 text-[13px] leading-relaxed text-zinc-300">
+        {/* Descripción / Bio */}
+        <p className="line-clamp-2 text-xs leading-relaxed text-zinc-300">
           {provider.description || "Profesional certificado con amplia experiencia. Entrega de trabajo garantizada en tiempo y forma."}
         </p>
 
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-3 gap-2 py-2.5 border-y border-white/7">
+        {/* Métricas: Distancia, Tiempo de Respuesta, Precio Estimado */}
+        <div className="grid grid-cols-3 gap-2 py-2.5 border-y border-white/8 bg-white/3 rounded-xl px-3">
           <div>
-            <div className="text-[9.5px] font-mono tracking-wider uppercase text-zinc-500 mb-0.5">
+            <div className="text-[9px] font-mono tracking-wider uppercase text-zinc-500 mb-0.5">
               Distancia
             </div>
-            <div className="text-[13px] font-semibold text-[#F4F3F7] flex items-center gap-1">
+            <div className="text-xs font-bold text-[#F4F3F7] flex items-center gap-1">
               <MapPin className="size-3 text-[#8B6BFF]" />
               {provider.distanceKm || "1.2"} km
             </div>
           </div>
           <div>
-            <div className="text-[9.5px] font-mono tracking-wider uppercase text-zinc-500 mb-0.5">
+            <div className="text-[9px] font-mono tracking-wider uppercase text-zinc-500 mb-0.5">
               Responde en
             </div>
-            <div className="text-[13px] font-semibold text-[#F4F3F7] flex items-center gap-1">
+            <div className="text-xs font-bold text-[#F4F3F7] flex items-center gap-1">
               <Clock className="size-3 text-[#8B6BFF]" />
               {provider.responseTime || "~10 min"}
             </div>
           </div>
           <div>
-            <div className="text-[9.5px] font-mono tracking-wider uppercase text-zinc-500 mb-0.5">
+            <div className="text-[9px] font-mono tracking-wider uppercase text-zinc-500 mb-0.5">
               Estimado
             </div>
-            <div className="text-[13px] font-semibold text-[#F4F3F7]">
+            <div className="text-xs font-extrabold text-[#3DDC84]">
               {formatPriceRange(provider.priceMin, provider.priceMax)}
             </div>
           </div>
         </div>
 
-        {/* Buttons: Ver Perfil & Elegir Profesional */}
-        <div className="flex items-center gap-2 pt-1">
+        {/* Botones de Acción */}
+        <div className="flex items-center gap-2 pt-0.5">
           {onOpenProfile && (
             <button
               type="button"
@@ -130,7 +132,7 @@ function ProviderCardContent({ provider, onAccept, onOpenProfile }: ProviderCard
                 e.stopPropagation();
                 onOpenProfile(provider);
               }}
-              className="flex-1 flex h-[44px] items-center justify-center gap-1.5 rounded-xl border border-white/14 bg-white/5 hover:bg-white/10 text-xs font-bold text-zinc-200 transition cursor-pointer"
+              className="flex-1 flex h-[46px] items-center justify-center gap-1.5 rounded-xl border border-white/14 bg-white/5 hover:bg-white/10 text-xs font-bold text-zinc-200 transition cursor-pointer"
             >
               <User className="size-3.5 text-[#8B6BFF]" />
               <span>Ver perfil</span>
@@ -144,7 +146,7 @@ function ProviderCardContent({ provider, onAccept, onOpenProfile }: ProviderCard
                 e.stopPropagation();
                 onAccept();
               }}
-              className="flex-1 flex h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[#7C5CFF] hover:bg-[#6b47ff] text-xs font-bold text-white shadow-md transition cursor-pointer"
+              className="flex-1 flex h-[46px] items-center justify-center gap-1.5 rounded-xl bg-[#7C5CFF] hover:bg-[#6b47ff] text-xs font-bold text-white shadow-md transition cursor-pointer"
             >
               <Check className="size-3.5" />
               <span>Elegir profesional</span>
@@ -152,7 +154,7 @@ function ProviderCardContent({ provider, onAccept, onOpenProfile }: ProviderCard
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -183,7 +185,7 @@ function SwipeableCard({ provider, onAccept, onReject, onOpenProfile }: Swipeabl
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, x: x.get() >= 0 ? 180 : -180, scale: 0.96 }}
       transition={{ duration: 0.24, ease: "easeOut" }}
-      className="absolute inset-x-0 top-0 z-30 cursor-grab touch-pan-y overflow-hidden rounded-[20px] border border-white/9 bg-[#131318] active:cursor-grabbing shadow-[0_24px_50px_rgba(0,0,0,0.55)]"
+      className="absolute inset-x-0 top-0 h-[480px] z-30 cursor-grab touch-pan-y overflow-hidden rounded-[24px] border border-white/12 bg-[#131318] active:cursor-grabbing shadow-[0_24px_50px_rgba(0,0,0,0.55)] flex flex-col justify-between"
     >
       <motion.div
         style={{ opacity: rejectOpacity }}
@@ -221,7 +223,7 @@ export function CardStack({
     return (
       <div
         className={cn(
-          "flex h-[480px] flex-col items-center justify-center rounded-[20px] border border-dashed border-white/15 bg-[#131318] px-8 text-center",
+          "flex h-[480px] flex-col items-center justify-center rounded-[24px] border border-dashed border-white/15 bg-[#131318] px-8 text-center",
           className
         )}
       >
@@ -236,13 +238,13 @@ export function CardStack({
   }
 
   return (
-    <div className={cn("relative h-[540px]", className)}>
+    <div className={cn("relative h-[480px] w-full", className)}>
       {cards.slice(1, 3).map((provider, index) => (
         <div
           key={provider.id}
-          className="absolute inset-x-3 top-0 h-[530px] rounded-[20px] border border-white/7 bg-[#131318]"
+          className="absolute inset-x-2 top-0 h-[470px] rounded-[24px] border border-white/8 bg-[#131318]"
           style={{
-            transform: `translateY(${(index + 1) * 8}px) scale(${1 - (index + 1) * 0.025})`,
+            transform: `translateY(${(index + 1) * 6}px) scale(${1 - (index + 1) * 0.025})`,
             opacity: 1 - index * 0.25,
             zIndex: 20 - index,
           }}

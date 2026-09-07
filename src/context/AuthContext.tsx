@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useState,
+  useEffect,
   ReactNode,
   useCallback,
 } from "react";
@@ -48,6 +49,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]> | null>(null);
+
+  // Sync state on client hydration to ensure user is available immediately across pages
+  useEffect(() => {
+    const storedUser = authStorage.getUser();
+    const storedToken = authStorage.getToken();
+    if (storedUser) {
+      setUser(storedUser);
+    }
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  }, []);
 
   const isAuthenticated = !!token && !!user;
 

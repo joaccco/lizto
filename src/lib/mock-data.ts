@@ -1,6 +1,6 @@
 import type { ParsedRequest, Provider } from "@/lib/types";
 
-export const MOCK_USER_NAME = "María";
+export const MOCK_USER_NAME = "";
 
 export const MOCK_PARSED_REQUEST: ParsedRequest = {
   raw_intent: "cerrajero urgente, quedé afuera de mi casa",
@@ -23,9 +23,9 @@ export const EXAMPLE_PARSED_REQUEST = MOCK_PARSED_REQUEST;
 export const MOCK_PROVIDERS: Provider[] = [
   {
     id: "1",
-    name: "Roberto Medina",
-    initials: "RM",
-    photo: "/providers/roberto-medina-v2.png",
+    name: "Profesional Cerrajero 1",
+    initials: "PC",
+    photo: "",
     category: "Cerrajería",
     categorySlug: "cerrajeria",
     specialties: ["Aperturas", "Cerraduras de seguridad"],
@@ -48,9 +48,9 @@ export const MOCK_PROVIDERS: Provider[] = [
   },
   {
     id: "2",
-    name: "Diego Fernández",
-    initials: "DF",
-    photo: "/providers/diego-fernandez-v2.png",
+    name: "Profesional Cerrajero 2",
+    initials: "PC",
+    photo: "",
     category: "Cerrajería",
     categorySlug: "cerrajeria",
     specialties: ["Cerrajería 24 h", "Automotor"],
@@ -72,9 +72,9 @@ export const MOCK_PROVIDERS: Provider[] = [
   },
   {
     id: "3",
-    name: "Ana Kupfer",
-    initials: "AK",
-    photo: "/providers/ana-kupfer-v2.png",
+    name: "Profesional Cerrajera 3",
+    initials: "PC",
+    photo: "",
     category: "Cerrajería",
     categorySlug: "cerrajeria",
     specialties: ["Cerraduras digitales", "Aperturas"],

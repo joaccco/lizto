@@ -32,16 +32,12 @@ export default function ProviderProfileEditPage() {
   const router = useRouter();
   const { showToast } = useToast();
 
-  const [name, setName] = useState("Roberto Medina");
-  const [bio, setBio] = useState("Cerrajero profesional matriculado con más de 8 años de experiencia en urgencias de hogar y automotor.");
-  const [phone, setPhone] = useState("3794123456");
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [phone, setPhone] = useState("");
   const [radiusKm, setRadiusKm] = useState<number>(15);
   const [selectedDays, setSelectedDays] = useState<string[]>(["mon", "tue", "wed", "thu", "fri", "sat"]);
-  const [specialties, setSpecialties] = useState<string[]>([
-    "Cerrajería residencial",
-    "Cerrajería automotor",
-    "Urgencias 24 hs",
-  ]);
+  const [specialties, setSpecialties] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

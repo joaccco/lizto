@@ -59,7 +59,7 @@ const CATEGORY_PROVIDERS_MAP: Record<string, AlternativeProvider[]> = {
   cerrajeria: [
     {
       id: "pro_cerrajero_1",
-      name: "Carlos Gómez",
+      name: "Cerrajero Matriculado #1",
       avatar_url: "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&auto=format&fit=crop&q=80",
       bio: "Cerrajero matriculado especializado en emergencias y aperturas de casas y autos sin daño. 10 años de trayectoria.",
       avg_rating: 4.9,
@@ -70,7 +70,7 @@ const CATEGORY_PROVIDERS_MAP: Record<string, AlternativeProvider[]> = {
     },
     {
       id: "pro_cerrajero_2",
-      name: "Mariana Silva",
+      name: "Cerrajera de Seguridad #2",
       avatar_url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
       bio: "Cerrajera profesional de seguridad. Atención urgente, colocación de cerraduras blindadas y cerrojos.",
       avg_rating: 4.9,
@@ -81,7 +81,7 @@ const CATEGORY_PROVIDERS_MAP: Record<string, AlternativeProvider[]> = {
     },
     {
       id: "pro_cerrajero_3",
-      name: "Esteban Rossi",
+      name: "Cerrajero Urgencias #3",
       avatar_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
       bio: "Servicio de cerrajería urgente domiciliaria y comercial. Apertura de candados, cerrojos y portones.",
       avg_rating: 4.8,
@@ -94,7 +94,7 @@ const CATEGORY_PROVIDERS_MAP: Record<string, AlternativeProvider[]> = {
   plomeria: [
     {
       id: "pro_plomero_1",
-      name: "Gustavo Benítez",
+      name: "Plomero Matriculado #1",
       avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
       bio: "Plomero matriculado e instalador. Desobstrucción con máquina, filtraciones y grifería.",
       avg_rating: 4.9,
@@ -105,7 +105,7 @@ const CATEGORY_PROVIDERS_MAP: Record<string, AlternativeProvider[]> = {
     },
     {
       id: "pro_plomero_2",
-      name: "Andrés Peralta",
+      name: "Plomero e Instalador #2",
       avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
       bio: "Especialista en instalación de termotanques, bombas presurizadoras y cañerías de termofusión.",
       avg_rating: 4.8,
@@ -118,7 +118,7 @@ const CATEGORY_PROVIDERS_MAP: Record<string, AlternativeProvider[]> = {
   electricidad: [
     {
       id: "pro_electricista_1",
-      name: "Javier Domínguez",
+      name: "Electricista APSE #1",
       avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
       bio: "Electricista matriculado APSE. Diagnóstico de cortocircuitos, instalación de tableros y térmicas.",
       avg_rating: 4.9,
@@ -129,7 +129,7 @@ const CATEGORY_PROVIDERS_MAP: Record<string, AlternativeProvider[]> = {
     },
     {
       id: "pro_electricista_2",
-      name: "Lucas Cabrera",
+      name: "Electricista Domiciliario #2",
       avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
       bio: "Instalación de luminarias LED, recableado de viviendas y colocación de disyuntores.",
       avg_rating: 4.8,
@@ -142,7 +142,7 @@ const CATEGORY_PROVIDERS_MAP: Record<string, AlternativeProvider[]> = {
   climatizacion: [
     {
       id: "pro_clima_1",
-      name: "Nicolás Herrera",
+      name: "Técnico en Climatización #1",
       avatar_url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
       bio: "Técnico matriculado en refrigeración. Instalación de equipos Split, carga de gas R410/R32 y service.",
       avg_rating: 4.9,
@@ -161,13 +161,13 @@ function formatTimelineDate(dateStr?: string, defaultHour = "20:15") {
   }
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return `23 Ago 2026, ${defaultHour} hs`;
     const day = d.getDate();
     const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    const month = months[d.getMonth()];
+    const month = months[d.getMonth()] || "Ago";
+    const year = d.getFullYear();
     const hours = d.getHours().toString().padStart(2, "0");
-    const mins = d.getMinutes().toString().padStart(2, "0");
-    return `${day} ${month}, ${hours}:${mins} hs`;
+    const minutes = d.getMinutes().toString().padStart(2, "0");
+    return `${day} ${month} ${year}, ${hours}:${minutes} hs`;
   } catch {
     return `23 Ago 2026, ${defaultHour} hs`;
   }
@@ -247,7 +247,6 @@ export function RequestStatusCard({
 
   // Inicialización dinámica del profesional desde las props o desde el almacenamiento de la sesión del usuario
   const [currentProviderName, setCurrentProviderName] = useState<string>(() => {
-    if (initialProviderName && initialProviderName !== "Roberto Medina") return initialProviderName;
     if (typeof window !== "undefined") {
       try {
         const stored = sessionStorage.getItem("accepted_provider");
@@ -259,7 +258,7 @@ export function RequestStatusCard({
         // ignore
       }
     }
-    return initialProviderName || "Carlos Gómez";
+    return initialProviderName || "";
   });
 
   const [currentProviderAvatar, setCurrentProviderAvatar] = useState<string | undefined>(() => {

@@ -19,7 +19,7 @@ export default function ProfilePage() {
   }, []);
 
   const getInitials = (name: string) => {
-    if (!name) return "JP";
+    if (!name) return "U";
     return name
       .split(" ")
       .filter(Boolean)
@@ -34,8 +34,8 @@ export default function ProfilePage() {
     router.push("/login");
   };
 
-  const userName = user?.name || "Juan Pérez";
-  const userEmail = user?.email || "juan.perez@mail.com";
+  const userName = user?.name || "";
+  const userEmail = user?.email || "";
 
   return (
     <ScreenShell className="py-8 space-y-8">
@@ -46,7 +46,7 @@ export default function ProfilePage() {
         </div>
         <div className="min-w-0 flex-1">
           <h1 className="text-[22px] leading-tight font-extrabold tracking-tight text-[#F4F3F7] truncate">
-            {userName}
+            {userName || "Mi Perfil"}
           </h1>
           <p className="text-[13.5px] text-zinc-400 truncate mt-0.5">
             {userEmail}

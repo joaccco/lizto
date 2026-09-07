@@ -46,7 +46,7 @@ export function mapBackendProviderToFrontend(bp: BackendProvider): Provider {
     id: bp.uuid,
     name: bp.name,
     initials,
-    photo: bp.avatar_url || "/providers/roberto-medina-v2.png",
+    photo: bp.avatar_url || "",
     category: categoryName,
     categorySlug,
     specialties,

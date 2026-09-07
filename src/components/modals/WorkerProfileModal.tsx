@@ -117,7 +117,7 @@ export function WorkerProfileModal({
                   id: 1,
                   score: 5,
                   comment: "Excelente trabajo, solucionó el problema muy rápido y sin romper la puerta.",
-                  reviewer_name: "María G.",
+                  reviewer_name: "Cliente Verificado",
                   created_at: new Date().toISOString(),
                 },
               ],

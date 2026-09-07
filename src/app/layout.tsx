@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 };
 
 import { ProviderIncomingRequestModal } from "@/components/layout/ProviderIncomingRequestModal";
+import { ObservabilityProvider } from "@/components/providers/ObservabilityProvider";
 
 export default function RootLayout({
   children,
@@ -30,13 +31,15 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col font-sans bg-[#08080A] text-[#F4F3F7]" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <ToastProvider>
-            <AuthProvider>
-              <main className="pb-24 flex-1">{children}</main>
-              <ProviderIncomingRequestModal />
-              <ConditionalBottomNav />
-            </AuthProvider>
-          </ToastProvider>
+          <ObservabilityProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <main className="pb-24 flex-1">{children}</main>
+                <ProviderIncomingRequestModal />
+                <ConditionalBottomNav />
+              </AuthProvider>
+            </ToastProvider>
+          </ObservabilityProvider>
         </ThemeProvider>
       </body>
     </html>

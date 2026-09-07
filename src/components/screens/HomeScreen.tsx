@@ -16,7 +16,7 @@ import type { Urgency } from "@/lib/types";
 export function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const firstName = user?.name ? user.name.split(" ")[0] : "María";
+  const firstName = user?.name ? user.name.split(" ")[0] : "";
   const [prompt, setPrompt] = useState("");
   const [urgency, setUrgency] = useState<Urgency>("today");
   const { parse, isLoading, error, resetError } = useParsedRequest();
@@ -93,9 +93,11 @@ export function HomeScreen() {
         {/* CENTRO DE PANTALLA: PROMPT BÚSQUEDA */}
         <main className="my-auto py-4 flex flex-col items-start w-full space-y-6">
           <div className="space-y-2 text-left">
-            <p className="text-sm font-medium text-zinc-400">
-              Hola, {firstName}
-            </p>
+            {firstName ? (
+              <p className="text-sm font-medium text-zinc-400">
+                Hola, {firstName}
+              </p>
+            ) : null}
             <h1 className="text-[34px] leading-[1.1] font-extrabold tracking-tight text-[#F4F3F7] max-w-[11ch]">
               ¿Qué necesitás resolver?
             </h1>

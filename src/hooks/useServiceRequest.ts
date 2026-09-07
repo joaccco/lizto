@@ -108,7 +108,7 @@ export function useServiceRequest() {
       let token = authStorage.getToken();
       if (!token) {
         try {
-          const guestEmail = `cliente_${Date.now()}_${Math.floor(Math.random() * 10000)}@test.com`;
+          const guestEmail = `cliente_${Date.now()}_${Math.floor(Math.random() * 10000)}@lizto.app`;
           const guestPassword = "password123";
           const regRes = await apiFetch<{ data: { user: any; token: string } }>(ENDPOINTS.REGISTER, {
             method: "POST",
@@ -124,22 +124,8 @@ export function useServiceRequest() {
             authStorage.setToken(regRes.data.token);
             authStorage.setUser(regRes.data.user);
           }
-        } catch {
-          try {
-            const loginRes = await apiFetch<{ data: { user: any; token: string } }>(ENDPOINTS.LOGIN, {
-              method: "POST",
-              body: JSON.stringify({
-                email: "juan@test.com",
-                password: "password",
-              }),
-            });
-            if (loginRes?.data?.token) {
-              authStorage.setToken(loginRes.data.token);
-              authStorage.setUser(loginRes.data.user);
-            }
-          } catch (e) {
-            console.warn("Auto guest auth failed:", e);
-          }
+        } catch (e) {
+          console.warn("Auto guest auth failed:", e);
         }
       }
 
@@ -279,7 +265,7 @@ export function useServiceRequest() {
               .join("")
               .substring(0, 2)
               .toUpperCase(),
-            photo: pData.avatar_url || "/providers/roberto-medina-v2.png",
+            photo: pData.avatar_url || "",
             category: "Servicios",
             categorySlug: "general",
             specialties: ["Servicio calificado"],

@@ -34,7 +34,7 @@ const TIMING_QUESTION: Question = {
 export default function SurveyPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const firstName = user?.name ? user.name.split(" ")[0] : "Juan";
+  const firstName = user?.name ? user.name.split(" ")[0] : "";
   const { createRequest, submitSurvey, createMatchSession } = useServiceRequest();
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -347,7 +347,7 @@ export default function SurveyPage() {
             {/* Title & Question */}
             <div className="space-y-2">
               <h1 className="text-[32px] leading-tight font-extrabold tracking-tight text-[#F4F3F7]" suppressHydrationWarning>
-                Una cosa más, {firstName}.
+                Una cosa más{firstName ? `, ${firstName}` : ""}.
               </h1>
               <p className="text-[19px] leading-snug font-medium text-[#F4F3F7]/62">
                 {currentQuestion.text}

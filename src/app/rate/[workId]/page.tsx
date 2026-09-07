@@ -98,7 +98,7 @@ export default function RateWorkPage() {
 
         {/* Card del profesional dinámico */}
         {(() => {
-          let name = "Carlos Gómez";
+          let name = "el profesional";
           let avatar = "";
           let category = "Servicio completado";
           if (typeof window !== "undefined") {
