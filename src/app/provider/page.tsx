@@ -145,6 +145,7 @@ export default function ProviderPage() {
   const [agendaEvents, setAgendaEvents] = useState<AgendaEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [profileStats, setProfileStats] = useState<{ avg_rating?: number | null; total_reviews?: number } | null>(null);
 
   // Ordenación cronológica de solicitudes
   const sortedWorkRequests = useMemo(() => {
@@ -231,12 +232,17 @@ export default function ProviderPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [resReq, resWorks, resAgenda, resKyc] = await Promise.all([
+      const [resReq, resWorks, resAgenda, resKyc, resProfile] = await Promise.all([
         apiFetch<{ data: WorkRequestItem[] }>(ENDPOINTS.WORK_REQUESTS).catch(() => ({ data: [] })),
         apiFetch<{ data: WorkRequestItem[] }>(ENDPOINTS.WORKS).catch(() => ({ data: [] })),
         apiFetch<{ data: AgendaEvent[]; pending_schedule?: AgendaEvent[] }>(ENDPOINTS.PROVIDER_AGENDA).catch(() => ({ data: [], pending_schedule: [] })),
         apiFetch<KycStatusResponse>(ENDPOINTS.KYC_STATUS).catch(() => null),
+        apiFetch<{ data: { avg_rating?: number | null; total_reviews?: number } }>(ENDPOINTS.PROVIDER_PROFILE).catch(() => null),
       ]);
+
+      if (resProfile?.data) {
+        setProfileStats(resProfile.data);
+      }
 
       setWorkRequests(resReq.data || []);
 
@@ -527,11 +533,24 @@ export default function ProviderPage() {
         <section className="grid grid-cols-2 gap-3">
           <div className="rounded-[20px] bg-[#131318] border border-white/8 p-4 space-y-1">
             <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-wider">Rating General</span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-extrabold text-[#F4F3F7]">4.9</span>
-              <span className="text-xs text-[#F2B441] font-bold">★</span>
-            </div>
-            <p className="text-[10px] text-zinc-500 font-medium">87 reseñas verificadas</p>
+            {profileStats?.avg_rating && (profileStats.total_reviews ?? 0) > 0 ? (
+              <>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-extrabold text-[#F4F3F7]">{profileStats.avg_rating.toFixed(1)}</span>
+                  <span className="text-xs text-[#F2B441] font-bold">★</span>
+                </div>
+                <p className="text-[10px] text-zinc-500 font-medium">{profileStats.total_reviews} reseñas verificadas</p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-baseline gap-1 pt-1">
+                  <span className="text-xl font-extrabold text-[#A78BFA] px-2 py-0.5 rounded-md bg-[#7C5CFF]/15 border border-[#7C5CFF]/25">
+                    Nuevo
+                  </span>
+                </div>
+                <p className="text-[10px] text-zinc-500 font-medium">Sin reseñas aún</p>
+              </>
+            )}
           </div>
 
           <div className="rounded-[20px] bg-[#131318] border border-white/8 p-4 space-y-1">

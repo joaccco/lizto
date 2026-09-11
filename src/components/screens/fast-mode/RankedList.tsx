@@ -56,13 +56,19 @@ export function RankedList({ providers, className }: RankedListProps) {
                 {topProvider.category} · {topProvider.neighborhood}
               </p>
               <div className="mt-2 flex items-center gap-3 text-xs">
-                <span className="inline-flex items-center gap-1 font-semibold text-zinc-800">
-                  <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                  {topProvider.rating.toFixed(1)}
-                  <span className="font-normal text-zinc-400">
-                    ({topProvider.reviewCount})
+                {topProvider.rating && (topProvider.reviewCount ?? 0) > 0 ? (
+                  <span className="inline-flex items-center gap-1 font-semibold text-zinc-800">
+                    <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                    {topProvider.rating.toFixed(1)}
+                    <span className="font-normal text-zinc-400">
+                      ({topProvider.reviewCount})
+                    </span>
                   </span>
-                </span>
+                ) : (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-[#4F46E5]/10 text-[#4F46E5] text-[11px] font-bold">
+                    Nuevo
+                  </span>
+                )}
                 <span className="inline-flex items-center gap-1 text-zinc-500">
                   <MapPin className="size-3.5" />
                   {topProvider.distanceKm} km
@@ -142,7 +148,8 @@ export function RankedList({ providers, className }: RankedListProps) {
                     ) : null}
                   </div>
                   <p className="mt-1 text-[11px] text-zinc-500">
-                    ★ {provider.rating.toFixed(1)} · {provider.distanceKm} km ·{" "}
+                    {provider.rating && (provider.reviewCount ?? 0) > 0 ? `★ ${provider.rating.toFixed(1)} · ` : "Nuevo · "}
+                    {provider.distanceKm} km ·{" "}
                     {provider.neighborhood}
                   </p>
                 </div>

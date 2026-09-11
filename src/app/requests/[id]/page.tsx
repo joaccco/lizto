@@ -168,9 +168,9 @@ export default function RequestDetailPage() {
           name: p.name,
           avatar_url: p.avatar_url || p.photo,
           bio: p.bio || p.description || "Profesional verificado de Lizto.",
-          avg_rating: p.avg_rating || p.rating || 4.9,
-          total_reviews: p.total_reviews || p.reviewCount || 87,
-          total_jobs_completed: p.total_jobs_completed || p.jobsCompleted || 124,
+          avg_rating: p.avg_rating || p.rating || null,
+          total_reviews: p.total_reviews ?? p.reviewCount ?? 0,
+          total_jobs_completed: p.total_jobs_completed ?? p.jobsCompleted ?? 0,
           is_verified: p.is_verified ?? true,
           specialties: p.specialties || ["Servicios"],
         };
@@ -214,7 +214,7 @@ export default function RequestDetailPage() {
           createdAt={requestDetail.created_at}
           providerName={providerName}
           providerAvatar={activeProvider?.avatar_url}
-          providerRating={activeProvider?.avg_rating || 4.9}
+          providerRating={activeProvider?.avg_rating || undefined}
           onOpenChat={() => router.push(`/conversations/${conversationId}`)}
           onRate={() => router.push(`/rate/${activeProvider?.uuid || requestDetail.id}`)}
         />
@@ -264,7 +264,12 @@ export default function RequestDetailPage() {
                     <ShieldCheck className="size-4 text-[#3DDC84]" />
                   </div>
                   <p className="text-xs text-zinc-400 font-medium">
-                    ★ {activeProvider.avg_rating?.toFixed(1) || "4.9"} · {activeProvider.total_jobs_completed || 120} trabajos completados
+                    {activeProvider.avg_rating && (activeProvider.total_reviews ?? 0) > 0
+                      ? `★ ${activeProvider.avg_rating.toFixed(1)}`
+                      : "Nuevo"}
+                    {activeProvider.total_jobs_completed && activeProvider.total_jobs_completed > 0
+                      ? ` · ${activeProvider.total_jobs_completed} trabajos completados`
+                      : ""}
                   </p>
                 </div>
               </div>
@@ -282,19 +287,23 @@ export default function RequestDetailPage() {
               <div>
                 <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Rating</div>
                 <div className="text-sm font-extrabold text-[#F2B441] mt-0.5">
-                  ★ {activeProvider.avg_rating?.toFixed(1) || "4.9"}
+                  {activeProvider.avg_rating && (activeProvider.total_reviews ?? 0) > 0 ? (
+                    `★ ${activeProvider.avg_rating.toFixed(1)}`
+                  ) : (
+                    <span className="text-xs text-[#A78BFA]">Nuevo</span>
+                  )}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Reseñas</div>
                 <div className="text-sm font-extrabold text-[#F4F3F7] mt-0.5">
-                  {activeProvider.total_reviews || 87}
+                  {activeProvider.total_reviews || 0}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Trabajos</div>
                 <div className="text-sm font-extrabold text-[#3DDC84] mt-0.5">
-                  {activeProvider.total_jobs_completed || 124}
+                  {activeProvider.total_jobs_completed || 0}
                 </div>
               </div>
             </div>

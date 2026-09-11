@@ -146,12 +146,20 @@ export function RecommendScreen({
 
             {/* Rating */}
             <div className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              <div className="flex items-center gap-1">
-                <Star className="size-4 fill-amber-400 text-amber-400" />
-                <span className="font-bold text-base">{provider.rating.toFixed(1)}</span>
-              </div>
-              <span className="text-zinc-400">•</span>
-              <span>{provider.reviewCount} reseñas</span>
+              {provider.rating && (provider.reviewCount ?? 0) > 0 ? (
+                <>
+                  <div className="flex items-center gap-1">
+                    <Star className="size-4 fill-amber-400 text-amber-400" />
+                    <span className="font-bold text-base">{provider.rating.toFixed(1)}</span>
+                  </div>
+                  <span className="text-zinc-400">•</span>
+                  <span>{provider.reviewCount} reseñas</span>
+                </>
+              ) : (
+                <span className="rounded-md bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 text-xs font-bold text-[#4F46E5] dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/60">
+                  Nuevo
+                </span>
+              )}
             </div>
 
             {/* Distancia y ETA 16px destacado */}

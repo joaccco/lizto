@@ -79,12 +79,25 @@ function ProviderCardContent({ provider, onAccept, onOpenProfile }: ProviderCard
             </p>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-[15px] font-extrabold text-[#F4F3F7]">
-              ★ {provider.rating.toFixed(1)}
-            </div>
-            <div className="text-[10.5px] font-mono text-zinc-500 mt-0.5">
-              {provider.reviewCount || 87} reseñas
-            </div>
+            {provider.rating && (provider.reviewCount ?? 0) > 0 ? (
+              <>
+                <div className="text-[15px] font-extrabold text-[#F4F3F7]">
+                  ★ {provider.rating.toFixed(1)}
+                </div>
+                <div className="text-[10.5px] font-mono text-zinc-500 mt-0.5">
+                  {provider.reviewCount} reseñas
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-xs font-bold text-[#A78BFA] px-2 py-0.5 rounded bg-[#7C5CFF]/15 border border-[#7C5CFF]/25">
+                  Nuevo
+                </div>
+                <div className="text-[10.5px] font-mono text-zinc-500 mt-0.5">
+                  Sin reseñas
+                </div>
+              </>
+            )}
           </div>
         </div>
 

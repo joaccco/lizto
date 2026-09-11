@@ -105,7 +105,7 @@ export function WorkerProfileModal({
               category_name: initialProviderData.category || "Servicios",
               specialties: initialProviderData.specialties || [],
               years_experience: 5,
-              avg_rating: initialProviderData.rating || 4.9,
+              avg_rating: initialProviderData.rating || null,
               total_reviews: initialProviderData.reviewCount || 1,
               total_jobs_completed: 12,
               is_verified: initialProviderData.isVerified !== false,
@@ -158,7 +158,7 @@ export function WorkerProfileModal({
       categorySlug: "cerrajeria",
       specialties: profile?.specialties || [],
       neighborhood: profile?.base_address || "Centro",
-      rating: profile?.avg_rating || 4.9,
+      rating: profile?.avg_rating || null,
       reviewCount: profile?.total_reviews || 1,
       jobsCompleted: profile?.total_jobs_completed || 12,
       responseTime: "~10 min",
@@ -255,19 +255,23 @@ export function WorkerProfileModal({
 
                 {/* Rating & Reviews Stats */}
                 <div className="flex items-center gap-2 pt-0.5 text-xs">
-                  {profile?.avg_rating && profile.avg_rating > 0 ? (
+                  {profile?.avg_rating && profile.avg_rating > 0 && (profile.total_reviews ?? 0) > 0 ? (
                     <div className="flex items-center gap-1 font-bold text-[#F2B441]">
                       <Star className="size-3.5 fill-[#F2B441] text-[#F2B441]" />
                       <span>{profile.avg_rating.toFixed(1)}</span>
                     </div>
-                  ) : null}
+                  ) : (
+                    <span className="text-[11px] font-semibold text-[#A78BFA] px-1.5 py-0.5 rounded bg-[#7C5CFF]/12 border border-[#7C5CFF]/25">
+                      Nuevo
+                    </span>
+                  )}
                   <span className="text-zinc-500">•</span>
                   <span className="text-zinc-300 font-medium">
                     {profile?.total_reviews && profile.total_reviews > 0
                       ? `${profile.total_reviews} ${profile.total_reviews === 1 ? "reseña" : "reseñas"}`
                       : "Sin reseñas aún"}
                   </span>
-                  {profile?.total_jobs_completed ? (
+                  {profile?.total_jobs_completed && profile.total_jobs_completed > 0 ? (
                     <>
                       <span className="text-zinc-500">•</span>
                       <span className="text-[#3DDC84] font-semibold">
@@ -369,7 +373,7 @@ export function WorkerProfileModal({
                 <span className="text-[10.5px] font-mono tracking-wider uppercase text-zinc-400 font-semibold">
                   Reseñas de clientes ({profile?.reviews?.length || 0})
                 </span>
-                {profile?.avg_rating && profile.avg_rating > 0 ? (
+                {profile?.avg_rating && profile.avg_rating > 0 && (profile.total_reviews ?? 0) > 0 ? (
                   <span className="text-xs font-bold text-[#F2B441]">
                     ★ {profile.avg_rating.toFixed(1)} promedio
                   </span>

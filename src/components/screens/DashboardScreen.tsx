@@ -379,15 +379,26 @@ export function DashboardScreen({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1 mt-0.5 text-xs font-semibold text-[#F2B441]">
-              <Star className="size-3 fill-[#F2B441] text-[#F2B441]" />
-              <span>
-                {activeRequest.accepted_provider?.avg_rating?.toFixed(1) || "5.0"}
-              </span>
-              <span className="text-zinc-500 font-normal text-[11px] ml-1">
-                • Ver perfil →
-              </span>
-            </div>
+            {activeRequest.accepted_provider?.avg_rating && (activeRequest.accepted_provider.total_reviews ?? 0) > 0 ? (
+              <div className="flex items-center gap-1 mt-0.5 text-xs font-semibold text-[#F2B441]">
+                <Star className="size-3 fill-[#F2B441] text-[#F2B441]" />
+                <span>
+                  {activeRequest.accepted_provider.avg_rating.toFixed(1)}
+                </span>
+                <span className="text-zinc-500 font-normal text-[11px] ml-1">
+                  • Ver perfil →
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 mt-0.5 text-xs font-semibold">
+                <span className="text-[11px] font-semibold text-[#A78BFA] px-1.5 py-0.5 rounded bg-[#7C5CFF]/12 border border-[#7C5CFF]/25">
+                  Nuevo
+                </span>
+                <span className="text-zinc-500 font-normal text-[11px] ml-1">
+                  • Ver perfil →
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

@@ -142,7 +142,7 @@ export function RequestStatusCard({
   agreedPrice,
   providerName: initialProviderName,
   providerAvatar: initialProviderAvatar,
-  providerRating: initialProviderRating = 4.9,
+  providerRating: initialProviderRating,
   alternativeProviders = [],
   onOpenChat,
   onRate,
@@ -183,7 +183,7 @@ export function RequestStatusCard({
     return undefined;
   });
 
-  const [currentProviderRating, setCurrentProviderRating] = useState<number>(() => {
+  const [currentProviderRating, setCurrentProviderRating] = useState<number | null>(() => {
     if (initialProviderRating) return initialProviderRating;
     if (typeof window !== "undefined") {
       try {
@@ -196,7 +196,7 @@ export function RequestStatusCard({
         // ignore
       }
     }
-    return 4.9;
+    return null;
   });
 
   const [assignedAt, setAssignedAt] = useState<string | undefined>(initialAssignedAt);
@@ -250,7 +250,7 @@ export function RequestStatusCard({
           name: p.name || `${p.first_name || ""} ${p.last_name || ""}`.trim() || "Profesional",
           avatar_url: p.avatar_url || p.profile_photo_url,
           bio: p.bio,
-          avg_rating: p.rating || 4.9,
+          avg_rating: p.rating || null,
           total_reviews: p.reviews_count || 0,
           total_jobs_completed: p.completed_jobs_count || 0,
           specialties: p.categories?.map((c) => c.name) || (categoryName ? [categoryName] : []),
@@ -281,7 +281,7 @@ export function RequestStatusCard({
     try {
       setCurrentProviderName(newProvider.name);
       setCurrentProviderAvatar(newProvider.avatar_url);
-      setCurrentProviderRating(newProvider.avg_rating || 4.9);
+      setCurrentProviderRating(newProvider.avg_rating || null);
       setCurrentStatus("confirmed");
       setAssignedAt(new Date().toISOString());
 
@@ -397,7 +397,7 @@ export function RequestStatusCard({
                     <ShieldCheck className="size-3.5 text-[#3DDC84] shrink-0" />
                   </div>
                   <p className="text-[11px] text-zinc-400 font-medium">
-                    ★ {currentProviderRating.toFixed(1)} · Profesional Verificado
+                    {currentProviderRating ? `★ ${currentProviderRating.toFixed(1)} · ` : ""}Profesional Verificado
                   </p>
                 </div>
               </div>
@@ -678,7 +678,7 @@ export function RequestStatusCard({
                             <ShieldCheck className="size-4 text-[#3DDC84] shrink-0" />
                           </div>
                           <p className="text-xs text-zinc-400 font-medium">
-                            ★ {pro.avg_rating?.toFixed(1) || "4.9"} · {pro.total_jobs_completed || 120} trabajos ·{" "}
+                            {pro.avg_rating ? `★ ${pro.avg_rating.toFixed(1)}` : "Nuevo"} · {pro.total_jobs_completed ? `${pro.total_jobs_completed} trabajos` : "Sin trabajos aún"} ·{" "}
                             <span className="text-[#C4B5FD] font-semibold">{pro.response_time || "~5 min"}</span>
                           </p>
                         </div>

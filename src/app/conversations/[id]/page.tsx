@@ -305,8 +305,16 @@ export default function ConversationPage() {
             <p className="text-xs text-zinc-400 truncate flex items-center gap-1">
               <span>{conversation?.category_name || "Servicio"}</span>
               <span>·</span>
-              <Star className="size-3 fill-[#F2B441] text-[#F2B441] inline" />
-              <span>{conversation?.provider_rating?.toFixed(1) || "4.9"}</span>
+              {conversation?.provider_rating ? (
+                <>
+                  <Star className="size-3 fill-[#F2B441] text-[#F2B441] inline" />
+                  <span>{conversation.provider_rating.toFixed(1)}</span>
+                </>
+              ) : (
+                <span className="text-[11px] font-semibold text-[#A78BFA] px-1.5 py-0.5 rounded bg-[#7C5CFF]/12 border border-[#7C5CFF]/25">
+                  Nuevo
+                </span>
+              )}
             </p>
           </div>
         </div>
