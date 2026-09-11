@@ -15,9 +15,15 @@ import {
   Sparkles,
   ChevronRight,
   X,
+  UserX,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { apiFetch } from "@/lib/api";
+import { ENDPOINTS } from "@/lib/endpoints";
+import type { BackendProvidersResponse } from "@/lib/types";
 
 export interface AlternativeProvider {
   id: string | number;
@@ -53,106 +59,6 @@ export interface RequestStatusCardProps {
   onRate?: () => void;
   onReassignProvider?: (newProvider: AlternativeProvider) => void;
 }
-
-// Diccionario de Profesionales Verificados Organizados Estrictamente por Área / Especialidad
-const CATEGORY_PROVIDERS_MAP: Record<string, AlternativeProvider[]> = {
-  cerrajeria: [
-    {
-      id: "pro_cerrajero_1",
-      name: "Cerrajero Matriculado #1",
-      avatar_url: "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&auto=format&fit=crop&q=80",
-      bio: "Cerrajero matriculado especializado en emergencias y aperturas de casas y autos sin daño. 10 años de trayectoria.",
-      avg_rating: 4.9,
-      total_reviews: 142,
-      total_jobs_completed: 189,
-      specialties: ["Cerrajero Matriculado", "Aperturas 24hs", "Cambio de Combinación", "Cerraduras Digitales"],
-      response_time: "~5 min",
-    },
-    {
-      id: "pro_cerrajero_2",
-      name: "Cerrajera de Seguridad #2",
-      avatar_url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-      bio: "Cerrajera profesional de seguridad. Atención urgente, colocación de cerraduras blindadas y cerrojos.",
-      avg_rating: 4.9,
-      total_reviews: 98,
-      total_jobs_completed: 112,
-      specialties: ["Cerrajera de Seguridad", "Cerraduras Blindadas", "Autos y Casas", "Seguridad Integral"],
-      response_time: "~8 min",
-    },
-    {
-      id: "pro_cerrajero_3",
-      name: "Cerrajero Urgencias #3",
-      avatar_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
-      bio: "Servicio de cerrajería urgente domiciliaria y comercial. Apertura de candados, cerrojos y portones.",
-      avg_rating: 4.8,
-      total_reviews: 76,
-      total_jobs_completed: 94,
-      specialties: ["Cerrajero Urgencias", "Aperturas Sin Daño", "Duplicados y Cerrojos"],
-      response_time: "~10 min",
-    },
-  ],
-  plomeria: [
-    {
-      id: "pro_plomero_1",
-      name: "Plomero Matriculado #1",
-      avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      bio: "Plomero matriculado e instalador. Desobstrucción con máquina, filtraciones y grifería.",
-      avg_rating: 4.9,
-      total_reviews: 115,
-      total_jobs_completed: 156,
-      specialties: ["Plomero Matriculado", "Desobstrucciones 24hs", "Reparación de Fugas"],
-      response_time: "~6 min",
-    },
-    {
-      id: "pro_plomero_2",
-      name: "Plomero e Instalador #2",
-      avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-      bio: "Especialista en instalación de termotanques, bombas presurizadoras y cañerías de termofusión.",
-      avg_rating: 4.8,
-      total_reviews: 84,
-      total_jobs_completed: 103,
-      specialties: ["Plomero e Instalador", "Termotanques", "Termofusión"],
-      response_time: "~9 min",
-    },
-  ],
-  electricidad: [
-    {
-      id: "pro_electricista_1",
-      name: "Electricista APSE #1",
-      avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
-      bio: "Electricista matriculado APSE. Diagnóstico de cortocircuitos, instalación de tableros y térmicas.",
-      avg_rating: 4.9,
-      total_reviews: 130,
-      total_jobs_completed: 167,
-      specialties: ["Electricista Matriculado", "Cortocircuitos 24hs", "Tableros Eléctricos"],
-      response_time: "~5 min",
-    },
-    {
-      id: "pro_electricista_2",
-      name: "Electricista Domiciliario #2",
-      avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
-      bio: "Instalación de luminarias LED, recableado de viviendas y colocación de disyuntores.",
-      avg_rating: 4.8,
-      total_reviews: 91,
-      total_jobs_completed: 118,
-      specialties: ["Electricista Domiciliario", "Instalaciones LED", "Disyuntores y Fugas"],
-      response_time: "~7 min",
-    },
-  ],
-  climatizacion: [
-    {
-      id: "pro_clima_1",
-      name: "Técnico en Climatización #1",
-      avatar_url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
-      bio: "Técnico matriculado en refrigeración. Instalación de equipos Split, carga de gas R410/R32 y service.",
-      avg_rating: 4.9,
-      total_reviews: 105,
-      total_jobs_completed: 140,
-      specialties: ["Técnico en Climatización", "Carga de Gas Split", "Mantenimiento Preventivo"],
-      response_time: "~10 min",
-    },
-  ],
-};
 
 // Formateador de fechas y horarios para la línea de tiempo
 function formatTimelineDate(dateStr?: string, defaultHour = "20:15") {
@@ -324,32 +230,49 @@ export function RequestStatusCard({
     .substring(0, 2)
     .toUpperCase();
 
-  // 1. Obtener clave de categoría limpia (ej. Cerrajería -> cerrajeria)
-  const categoryKey = (categoryName || "cerrajeria")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
+  const [fetchedAlternatives, setFetchedAlternatives] = useState<AlternativeProvider[]>([]);
+  const [loadingAlternatives, setLoadingAlternatives] = useState(false);
+  const router = useRouter();
 
-  // 2. Buscar profesionales pertenecientes únicamente a esa categoría
-  let categoryAlternatives = CATEGORY_PROVIDERS_MAP[categoryKey];
+  useEffect(() => {
+    if (!showReassignModal) return;
+    if (alternativeProviders && alternativeProviders.length > 0) return;
 
-  if (!categoryAlternatives || categoryAlternatives.length === 0) {
-    if (categoryKey.includes("cerraj") || categoryKey.includes("llav")) {
-      categoryAlternatives = CATEGORY_PROVIDERS_MAP["cerrajeria"];
-    } else if (categoryKey.includes("plom") || categoryKey.includes("agua")) {
-      categoryAlternatives = CATEGORY_PROVIDERS_MAP["plomeria"];
-    } else if (categoryKey.includes("electr") || categoryKey.includes("luz")) {
-      categoryAlternatives = CATEGORY_PROVIDERS_MAP["electricidad"];
-    } else if (categoryKey.includes("clima") || categoryKey.includes("aire")) {
-      categoryAlternatives = CATEGORY_PROVIDERS_MAP["climatizacion"];
-    } else {
-      categoryAlternatives = CATEGORY_PROVIDERS_MAP["cerrajeria"];
-    }
-  }
+    let cancelled = false;
+    setLoadingAlternatives(true);
+    const categoryParam = categoryName ? `?category=${encodeURIComponent(categoryName)}` : "";
+    apiFetch<BackendProvidersResponse>(`${ENDPOINTS.PROVIDERS}${categoryParam}`)
+      .then((res) => {
+        if (cancelled) return;
+        const items = res?.data || [];
+        const mapped: AlternativeProvider[] = items.map((p) => ({
+          id: p.id,
+          name: p.name || `${p.first_name || ""} ${p.last_name || ""}`.trim() || "Profesional",
+          avatar_url: p.avatar_url || p.profile_photo_url,
+          bio: p.bio,
+          avg_rating: p.rating || 4.9,
+          total_reviews: p.reviews_count || 0,
+          total_jobs_completed: p.completed_jobs_count || 0,
+          specialties: p.categories?.map((c) => c.name) || (categoryName ? [categoryName] : []),
+          response_time: "~10 min",
+        }));
+        setFetchedAlternatives(mapped);
+      })
+      .catch(() => {
+        if (!cancelled) setFetchedAlternatives([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingAlternatives(false);
+      });
 
-  // 3. Filtrar estrictamente para EXCLUIR al profesional que canceló
-  const availableAlternatives = (alternativeProviders && alternativeProviders.length > 0 ? alternativeProviders : categoryAlternatives).filter(
+    return () => {
+      cancelled = true;
+    };
+  }, [showReassignModal, alternativeProviders, categoryName]);
+
+  const rawAlternatives = alternativeProviders && alternativeProviders.length > 0 ? alternativeProviders : fetchedAlternatives;
+  // Filtrar estrictamente para EXCLUIR al profesional que canceló
+  const availableAlternatives = rawAlternatives.filter(
     (p) => !initialProviderName || p.name.toLowerCase().trim() !== initialProviderName.toLowerCase().trim()
   );
 
@@ -686,74 +609,110 @@ export function RequestStatusCard({
                 Especialistas de {categoryName || "Cerrajería"} disponibles ({availableAlternatives.length})
               </span>
 
-              {availableAlternatives.map((pro) => (
-                <div
-                  key={pro.id}
-                  className="rounded-[22px] bg-gradient-to-b from-white/8 to-white/3 border border-white/12 p-4 space-y-3 hover:border-[#8B6BFF]/60 transition shadow-lg"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="relative size-12 shrink-0 rounded-full bg-[#1D1D25] border border-white/15 flex items-center justify-center font-bold text-xs text-white">
-                        {pro.avatar_url ? (
-                          <Image
-                            src={pro.avatar_url}
-                            alt={pro.name}
-                            fill
-                            unoptimized
-                            sizes="48px"
-                            className="object-cover rounded-full"
-                          />
-                        ) : (
-                          <span>
-                            {pro.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .substring(0, 2)}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <h4 className="text-base font-bold text-[#F4F3F7] truncate">{pro.name}</h4>
-                          <ShieldCheck className="size-4 text-[#3DDC84] shrink-0" />
-                        </div>
-                        <p className="text-xs text-zinc-400 font-medium">
-                          ★ {pro.avg_rating?.toFixed(1) || "4.9"} · {pro.total_jobs_completed || 120} trabajos ·{" "}
-                          <span className="text-[#C4B5FD] font-semibold">{pro.response_time || "~5 min"}</span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {pro.bio && <p className="text-xs text-zinc-300 italic leading-relaxed">«{pro.bio}»</p>}
-
-                  {/* Especialidades Chips */}
-                  {pro.specialties && pro.specialties.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {pro.specialties.map((spec) => (
-                        <span
-                          key={spec}
-                          className="px-2.5 py-0.5 rounded-full bg-[#7C5CFF]/15 border border-[#7C5CFF]/30 text-[#C4B5FD] text-[10.5px] font-mono"
-                        >
-                          {spec}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Botón de Confirmar Reasignación en 1 clic */}
-                  <button
-                    type="button"
-                    onClick={() => handleSelectNewProvider(pro)}
-                    className="w-full h-[46px] rounded-[14px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-md cursor-pointer mt-2"
-                  >
-                    <span>Asignar a {pro.name.split(" ")[0]} a este pedido</span>
-                    <ChevronRight className="size-4" />
-                  </button>
+              {loadingAlternatives ? (
+                <div className="py-8 text-center text-sm text-zinc-400">
+                  <div className="size-6 border-2 border-[#8B6BFF] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  Buscando especialistas disponibles...
                 </div>
-              ))}
+              ) : availableAlternatives.length === 0 ? (
+                <div className="py-8 px-4 text-center rounded-[20px] bg-white/4 border border-white/8 space-y-3">
+                  <UserX className="size-10 text-zinc-500 mx-auto" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-white">No hay especialistas disponibles en esta zona</p>
+                    <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                      No encontramos otros profesionales disponibles en este momento. Podés ampliar el radio de búsqueda o cambiar la fecha/hora.
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowReassignModal(false);
+                        router.push("/browse");
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-[#7C5CFF] hover:bg-[#6b47ff] text-white text-xs font-bold transition"
+                    >
+                      Explorar catálogo de profesionales
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowReassignModal(false)}
+                      className="px-4 py-2.5 rounded-xl bg-white/8 hover:bg-white/12 text-zinc-300 text-xs font-medium transition"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                availableAlternatives.map((pro) => (
+                  <div
+                    key={pro.id}
+                    className="rounded-[22px] bg-gradient-to-b from-white/8 to-white/3 border border-white/12 p-4 space-y-3 hover:border-[#8B6BFF]/60 transition shadow-lg"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="relative size-12 shrink-0 rounded-full bg-[#1D1D25] border border-white/15 flex items-center justify-center font-bold text-xs text-white">
+                          {pro.avatar_url ? (
+                            <Image
+                              src={pro.avatar_url}
+                              alt={pro.name}
+                              fill
+                              unoptimized
+                              sizes="48px"
+                              className="object-cover rounded-full"
+                            />
+                          ) : (
+                            <span>
+                              {pro.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .substring(0, 2)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="text-base font-bold text-[#F4F3F7] truncate">{pro.name}</h4>
+                            <ShieldCheck className="size-4 text-[#3DDC84] shrink-0" />
+                          </div>
+                          <p className="text-xs text-zinc-400 font-medium">
+                            ★ {pro.avg_rating?.toFixed(1) || "4.9"} · {pro.total_jobs_completed || 120} trabajos ·{" "}
+                            <span className="text-[#C4B5FD] font-semibold">{pro.response_time || "~5 min"}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {pro.bio && <p className="text-xs text-zinc-300 italic leading-relaxed">«{pro.bio}»</p>}
+
+                    {/* Especialidades Chips */}
+                    {pro.specialties && pro.specialties.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {pro.specialties.map((spec) => (
+                          <span
+                            key={spec}
+                            className="px-2.5 py-0.5 rounded-full bg-[#7C5CFF]/15 border border-[#7C5CFF]/30 text-[#C4B5FD] text-[10.5px] font-mono"
+                          >
+                            {spec}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Botón de Confirmar Reasignación en 1 clic */}
+                    <button
+                      type="button"
+                      onClick={() => handleSelectNewProvider(pro)}
+                      className="w-full h-[46px] rounded-[14px] bg-[#7C5CFF] hover:bg-[#6b47ff] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-md cursor-pointer mt-2"
+                    >
+                      <span>Asignar a {pro.name.split(" ")[0]} a este pedido</span>
+                      <ChevronRight className="size-4" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

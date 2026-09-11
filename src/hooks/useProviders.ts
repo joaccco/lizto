@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
 import { ENDPOINTS } from "@/lib/endpoints";
-import { MOCK_PROVIDERS } from "@/lib/mock-data";
 import type { BackendProvider, BackendProvidersResponse, Provider } from "@/lib/types";
 
 interface UseProvidersOptions {
@@ -92,21 +91,14 @@ export function useProviders(options: UseProvidersOptions = {}) {
           const mapped = res.data.map(mapBackendProviderToFrontend);
           setProviders(mapped);
         } else {
-          // Fallback to mock providers if empty response or category match in mock
-          const filteredMock = options.category
-            ? MOCK_PROVIDERS.filter((p) => p.categorySlug === options.category)
-            : MOCK_PROVIDERS;
-          setProviders(filteredMock.length > 0 ? filteredMock : MOCK_PROVIDERS);
+          setProviders([]);
         }
       })
       .catch((err) => {
         if (!isMounted) return;
-        console.warn("Error fetching providers from backend, fallback to mock data:", err);
-        const filteredMock = options.category
-          ? MOCK_PROVIDERS.filter((p) => p.categorySlug === options.category)
-          : MOCK_PROVIDERS;
-        setProviders(filteredMock.length > 0 ? filteredMock : MOCK_PROVIDERS);
-        setError("No se pudieron cargar los datos en vivo. Mostrando datos de respaldo.");
+        console.warn("Error fetching providers from backend:", err);
+        setProviders([]);
+        setError("No se pudieron cargar los profesionales.");
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);

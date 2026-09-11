@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ScreenShell } from "@/components/screens/shared/ScreenShell";
-import { formatPriceRange, MOCK_PROVIDERS } from "@/lib/mock-data";
+import { formatPriceRange } from "@/lib/mock-data";
 import type { Provider } from "@/lib/types";
 
 export default function WorkConfirmedPage() {
@@ -20,10 +20,10 @@ export default function WorkConfirmedPage() {
       if (stored) {
         setProvider(JSON.parse(stored));
       } else {
-        setProvider(MOCK_PROVIDERS[0]);
+        setProvider(null);
       }
     } catch {
-      setProvider(MOCK_PROVIDERS[0]);
+      setProvider(null);
     }
   }, []);
 
@@ -51,7 +51,11 @@ export default function WorkConfirmedPage() {
           ¡Solicitud enviada!
         </h1>
         <p className="mt-3 max-w-[30ch] text-[15.5px] leading-relaxed text-zinc-400">
-          Le avisamos a <strong className="text-[#F4F3F7]">{providerName}</strong>. Te confirmará en breve.
+          {provider ? (
+            <>Le avisamos a <strong className="text-[#F4F3F7]">{providerName}</strong>. Te confirmará en breve.</>
+          ) : (
+            <>Tu solicitud fue registrada correctamente y te avisaremos ante novedades.</>
+          )}
         </p>
 
         {/* Accepted Provider Card */}

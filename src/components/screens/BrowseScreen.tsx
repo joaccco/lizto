@@ -22,7 +22,6 @@ import { useProviders } from "@/hooks/useProviders";
 
 import { useBrowseSession } from "@/hooks/useSearchSession";
 import { useServiceRequest } from "@/hooks/useServiceRequest";
-import { MOCK_PROVIDERS } from "@/lib/mock-data";
 import type { ParsedRequest, Provider } from "@/lib/types";
 
 interface StoredCard {
@@ -99,7 +98,7 @@ export function BrowseScreen() {
     if (apiProviders && apiProviders.length > 0) {
       return apiProviders;
     }
-    return MOCK_PROVIDERS;
+    return [];
   }, [sessionCards, apiProviders]);
 
   const {
@@ -239,6 +238,14 @@ export function BrowseScreen() {
                 Guardar y recibir aviso
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => router.push("/survey")}
+              className="flex h-[52px] w-full items-center justify-center rounded-2xl border border-[#7C5CFF]/30 bg-[#7C5CFF]/10 text-sm font-semibold text-[#8B6BFF] hover:bg-[#7C5CFF]/20 transition cursor-pointer"
+            >
+              Cambiar fecha o zona
+            </button>
 
             <button
               type="button"

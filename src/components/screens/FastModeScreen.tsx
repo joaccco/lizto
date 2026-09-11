@@ -8,7 +8,6 @@ import { ScreenShell } from "@/components/screens/shared/ScreenShell";
 import { TopBar } from "@/components/screens/shared/TopBar";
 import { useProviders } from "@/hooks/useProviders";
 import { useFastModeSession } from "@/hooks/useSearchSession";
-import { MOCK_PROVIDERS } from "@/lib/mock-data";
 import type { ParsedRequest } from "@/lib/types";
 
 export function FastModeScreen() {
@@ -44,20 +43,30 @@ export function FastModeScreen() {
     availability: "available",
   });
 
-  const providers = useMemo(() => {
-    if (apiProviders && apiProviders.length > 0) {
-      return apiProviders;
-    }
-    return MOCK_PROVIDERS;
-  }, [apiProviders]);
+  const providers = useMemo(() => apiProviders || [], [apiProviders]);
 
   if (providers.length === 0) {
     return (
       <ScreenShell>
         <TopBar variant="back" title="Modo urgente" rightIcon="none" />
-        <div className="mt-6 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-          No encontramos profesionales disponibles ahora. Probá de nuevo en unos
-          minutos.
+        <div className="mt-6 space-y-4">
+          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/5 p-4 text-sm text-zinc-300">
+            No encontramos profesionales disponibles para atención inmediata en esta zona. Podés planificar tu pedido para otra fecha o ampliar tu búsqueda.
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/survey")}
+            className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-[#7C5CFF] text-sm font-semibold text-white transition hover:bg-[#6b47ff] cursor-pointer"
+          >
+            Planificar para otra fecha u horario
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/search")}
+            className="flex h-[52px] w-full items-center justify-center rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-700 cursor-pointer"
+          >
+            Buscar otro servicio
+          </button>
         </div>
       </ScreenShell>
     );
