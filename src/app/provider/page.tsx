@@ -54,8 +54,8 @@ interface WorkRequestItem {
   service_request_id?: string;
   work_id?: string;
   conversation_id?: string;
-  category: string;
-  category_slug?: string;
+  category?: string | null;
+  category_slug?: string | null;
   raw_prompt: string;
   client_name: string;
   urgency: string;
@@ -659,7 +659,7 @@ export default function ProviderPage() {
                             <div className="min-w-0">
                               <h4 className="text-sm font-bold text-[#F4F3F7] truncate">{req.client_name}</h4>
                               <div className="flex items-center gap-2">
-                                <span className="text-xs text-zinc-400 truncate">{req.category}</span>
+                                <span className="text-xs text-zinc-400 truncate">{req.category || "Sin especificar"}</span>
                                 <span className="text-[11px] font-mono text-zinc-400">· {timeInfo.relative}</span>
                               </div>
                             </div>
