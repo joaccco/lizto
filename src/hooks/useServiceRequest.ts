@@ -78,6 +78,84 @@ interface MatchSessionResponse {
   };
 }
 
+export function generateStrongGuestPassword(): string {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnopqrstuvwxyz";
+  const digits = "23456789";
+  const special = "!@#$%&*-_";
+  const all = upper + lower + digits + special;
+
+  const chars = [
+    upper[Math.floor(Math.random() * upper.length)],
+    lower[Math.floor(Math.random() * lower.length)],
+    digits[Math.floor(Math.random() * digits.length)],
+    special[Math.floor(Math.random() * special.length)],
+  ];
+
+  for (let i = 0; i < 12; i++) {
+    chars.push(all[Math.floor(Math.random() * all.length)]);
+  }
+
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+
+  return chars.join("");
+}
+
+export async function ensureGuestToken(): Promise<string> {
+  // 1. Verificar token existente o recuperar token de invitado previo persistido
+  let token = authStorage.getToken();
+  if (!token && typeof window !== "undefined") {
+    const savedGuestToken = localStorage.getItem("lizto_guest_token");
+    if (savedGuestToken) {
+      authStorage.setToken(savedGuestToken);
+      token = savedGuestToken;
+    }
+  }
+
+  // 2. Si no hay token de sesión ni de invitado guardado, registrar cuenta de invitado una única vez
+  if (!token) {
+    try {
+      const guestEmail = `cliente_${Date.now()}_${Math.floor(Math.random() * 10000)}@lizto.app`;
+      const guestPassword = generateStrongGuestPassword();
+      const regRes = await apiFetch<{ data: { user: any; token: string } }>(ENDPOINTS.REGISTER, {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Cliente Invitado",
+          email: guestEmail,
+          password: guestPassword,
+          password_confirmation: guestPassword,
+          role: "client",
+        }),
+      });
+      if (regRes?.data?.token) {
+        authStorage.setToken(regRes.data.token);
+        authStorage.setUser(regRes.data.user);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("lizto_guest_token", regRes.data.token);
+        }
+        token = regRes.data.token;
+      }
+    } catch (authErr: any) {
+      console.error("Auto guest auth failed:", authErr);
+      const errorMsg =
+        authErr?.message ||
+        authErr?.error ||
+        "No se pudo completar la autenticación de invitado. Por favor, iniciá sesión o reintentá.";
+      throw new Error(errorMsg);
+    }
+  }
+
+  // 3. Si por alguna razón no se obtuvo token, CORTAR de inmediato
+  if (!token) {
+    throw new Error("Sesión no autenticada. No es posible crear la solicitud sin token.");
+  }
+
+  return token;
+}
+
 export function useServiceRequest() {
   const [requestId, setRequestId] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -104,30 +182,7 @@ export function useServiceRequest() {
     setError(null);
 
     try {
-      // Auto guest auth if user has no token
-      let token = authStorage.getToken();
-      if (!token) {
-        try {
-          const guestEmail = `cliente_${Date.now()}_${Math.floor(Math.random() * 10000)}@lizto.app`;
-          const guestPassword = "password123";
-          const regRes = await apiFetch<{ data: { user: any; token: string } }>(ENDPOINTS.REGISTER, {
-            method: "POST",
-            body: JSON.stringify({
-              name: "Cliente",
-              email: guestEmail,
-              password: guestPassword,
-              password_confirmation: guestPassword,
-              role: "client",
-            }),
-          });
-          if (regRes?.data?.token) {
-            authStorage.setToken(regRes.data.token);
-            authStorage.setUser(regRes.data.user);
-          }
-        } catch (e) {
-          console.warn("Auto guest auth failed:", e);
-        }
-      }
+      await ensureGuestToken();
 
       const storedAddress = typeof window !== "undefined" ? sessionStorage.getItem("location_address") : null;
       const storedLat = typeof window !== "undefined" ? sessionStorage.getItem("location_lat") : null;

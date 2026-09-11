@@ -56,6 +56,7 @@ const customPinIcon = L.divIcon({
 
 // Presets de barrios y zonas frecuentes para selección rápida instantánea
 const NEIGHBORHOOD_PRESETS = [
+  { name: "Corrientes Centro", lat: -27.4692, lng: -58.8306, address: "Av. 3 de Abril 850, Corrientes" },
   { name: "Palermo", lat: -34.5889, lng: -58.4306, address: "Thames 1842, Palermo, CABA" },
   { name: "Recoleta", lat: -34.5881, lng: -58.3974, address: "Av. Alvear 1650, Recoleta, CABA" },
   { name: "Belgrano", lat: -34.5614, lng: -58.4563, address: "Av. Cabildo 2040, Belgrano, CABA" },

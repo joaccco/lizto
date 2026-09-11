@@ -58,4 +58,16 @@ export const ENDPOINTS = {
   KYC_STATUS: "/kyc/status",
   KYC_SIGNED_URL: (uuid: string) => `/kyc/documents/${uuid}/signed-url`,
   KYC_DOCUMENT_DELETE: (uuid: string) => `/kyc/documents/${uuid}`,
+
+  // Onboarding Identity (Didit)
+  ONBOARDING_IDENTITY_START: "/onboarding/identity/start",
+  ONBOARDING_IDENTITY_SUBMIT: "/onboarding/identity/submit",
+  ONBOARDING_IDENTITY_STATUS: "/onboarding/identity/status",
+
+  // Admin MVU
+  ADMIN_MVU_PENDING: "/admin/mvu/pending",
+  ADMIN_MVU_DETAIL: (id: number | string) => `/admin/mvu/${id}`,
+  ADMIN_MVU_APPROVE: (id: number | string) => `/admin/mvu/${id}/approve`,
+  ADMIN_MVU_REJECT: (id: number | string) => `/admin/mvu/${id}/reject`,
+  ADMIN_MVU_REQUEST_DATA: (id: number | string) => `/admin/mvu/${id}/request-data`,
 } as const;
