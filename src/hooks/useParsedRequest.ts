@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
 import { ENDPOINTS } from "@/lib/endpoints";
-import { buildMockParseResponse } from "@/lib/mock-data";
 import { saveSearchSession } from "@/lib/storage";
 import type {
   BackendParseRequestResponse,
@@ -83,24 +82,38 @@ export function useParsedRequest(): UseParsedRequestResult {
       saveSearchSession(parsedRequest, []);
 
       return result;
-    } catch {
-      // Fallback to mock data on network error
-      const mockResult = buildMockParseResponse(prompt, urgency);
+    } catch (err: any) {
+      setError(err?.message || "Error al procesar la solicitud.");
+      const fallbackRequest: ParsedRequest = {
+        raw_intent: prompt,
+        category_hints: [],
+        urgency,
+        is_remote: false,
+        requires_presence: true,
+        estimated_complexity: "simple",
+        ambiguity_level: "low",
+        clarification_needed: [],
+        confidence: 0.5,
+        summary: prompt,
+        category: "General",
+        categorySlug: "general",
+        location: "CABA",
+      };
       const fallbackMode: "fast" | "browse" | "professional" =
         urgency === "immediate" ? "fast" : "browse";
 
       const result: ParseRequestResponse = {
-        parsed_request: mockResult.parsed_request,
-        providers: mockResult.providers,
+        parsed_request: fallbackRequest,
+        providers: [],
         mode: fallbackMode,
       };
 
-      setParsed(mockResult.parsed_request);
-      setProviders(mockResult.providers);
+      setParsed(fallbackRequest);
+      setProviders([]);
       setMode(fallbackMode);
 
       sessionStorage.setItem("parsed_request", JSON.stringify(result));
-      saveSearchSession(mockResult.parsed_request, mockResult.providers);
+      saveSearchSession(fallbackRequest, []);
 
       return result;
     } finally {

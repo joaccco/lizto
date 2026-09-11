@@ -3,9 +3,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
-import { getProvidersByCategorySlug } from "@/lib/mock-data";
 import { saveSearchSession } from "@/lib/storage";
-import type { ParsedRequest } from "@/lib/types";
+import type { ParsedRequest, Provider } from "@/lib/types";
 
 const CATEGORY_LABELS: Record<string, string> = {
   cerrajeria: "Cerrajería",
@@ -25,7 +24,7 @@ export default function SearchPageClient() {
 
   useEffect(() => {
     const category = CATEGORY_LABELS[categorySlug] ?? "Servicios";
-    const providers = getProvidersByCategorySlug(categorySlug);
+    const providers: Provider[] = [];
 
     const parsedRequest: ParsedRequest = {
       raw_intent: `Buscar ${category.toLowerCase()}`,

@@ -3,11 +3,6 @@
 import { useSyncExternalStore } from "react";
 
 import {
-  EXAMPLE_PARSED_REQUEST,
-  getProvidersByCategorySlug,
-  getRankedUrgentProviders,
-} from "@/lib/mock-data";
-import {
   loadSearchSession,
   subscribeSearchSession,
 } from "@/lib/storage";
@@ -18,9 +13,25 @@ interface BrowseSessionData {
   providers: Provider[];
 }
 
+const EXAMPLE_PARSED_REQUEST: ParsedRequest = {
+  raw_intent: "cerrajero urgente, quedé afuera de mi casa",
+  category_hints: ["cerrajería", "apertura"],
+  urgency: "immediate",
+  is_remote: false,
+  requires_presence: true,
+  estimated_complexity: "simple",
+  ambiguity_level: "low",
+  clarification_needed: [],
+  confidence: 0.95,
+  summary: "Cerrajero urgente para apertura de puerta",
+  category: "Cerrajería",
+  categorySlug: "cerrajeria",
+  location: "CABA",
+};
+
 const BROWSE_FALLBACK: BrowseSessionData = {
   parsedRequest: EXAMPLE_PARSED_REQUEST,
-  providers: getProvidersByCategorySlug(EXAMPLE_PARSED_REQUEST.categorySlug),
+  providers: [],
 };
 
 function getBrowseSnapshot(): BrowseSessionData {
@@ -68,7 +79,7 @@ const FAST_MODE_FALLBACK: ParsedRequest = {
 
 const FAST_MODE_SERVER_SNAPSHOT: FastModeSessionData = {
   parsedRequest: FAST_MODE_FALLBACK,
-  providers: getRankedUrgentProviders("cerrajeria"),
+  providers: [],
 };
 
 let cachedFastParsedRequest: ParsedRequest | null = null;
@@ -86,7 +97,7 @@ function getFastModeSnapshot(): FastModeSessionData {
     cachedFastParsedRequest = storedParsed;
     cachedFastSnapshot = {
       parsedRequest: storedParsed,
-      providers: getRankedUrgentProviders(storedParsed.categorySlug),
+      providers: storedSession?.providers || [],
     };
     return cachedFastSnapshot;
   }

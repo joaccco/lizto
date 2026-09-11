@@ -17,7 +17,7 @@ import {
 import Image from "next/image";
 import { useState } from "react";
 
-import { formatPriceRange } from "@/lib/mock-data";
+import { formatPriceRange } from "@/lib/format";
 import type { Provider } from "@/lib/types";
 import { cn } from "@/lib/utils";
 

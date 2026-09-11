@@ -1,25 +1,67 @@
 import { describe, it, expect } from "vitest";
-import {
-  MOCK_PROVIDERS,
-  getProvidersByCategorySlug,
-  getRankedUrgentProviders,
-  buildMockParseResponse,
-} from "../mock-data";
+import fs from "node:fs";
+import path from "node:path";
 
-describe("T3: No fabricated providers in frontend (anti-fictitious data policy)", () => {
-  it("strictly prohibits fabricated providers in MOCK_PROVIDERS", () => {
-    expect(MOCK_PROVIDERS).toEqual([]);
-    expect(MOCK_PROVIDERS.length).toBe(0);
+describe("T3a: No fabricated providers guardian (anti-fictitious data policy)", () => {
+  it("strictly ensures mock-data.ts has been deleted and does not exist", () => {
+    const mockDataPath = path.resolve(__dirname, "../mock-data.ts");
+    expect(fs.existsSync(mockDataPath)).toBe(false);
   });
 
-  it("returns empty arrays for mock provider queries without fabricating data", () => {
-    expect(getProvidersByCategorySlug("cerrajeria")).toEqual([]);
-    expect(getProvidersByCategorySlug("electricidad")).toEqual([]);
-    expect(getProvidersByCategorySlug("plomeria")).toEqual([]);
-    expect(getRankedUrgentProviders()).toEqual([]);
-    expect(getRankedUrgentProviders("electricidad")).toEqual([]);
+  it("strictly prohibits any module from exporting fabricated provider arrays or mock data", () => {
+    const srcDir = path.resolve(__dirname, "../../");
 
-    const parseResponse = buildMockParseResponse();
-    expect(parseResponse.providers).toEqual([]);
+    function checkDir(dir: string): string[] {
+      const forbiddenFiles: string[] = [];
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name !== "node_modules" && entry.name !== ".next" && entry.name !== ".git") {
+            forbiddenFiles.push(...checkDir(fullPath));
+          }
+        } else if (entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx"))) {
+          if (fullPath.includes("no-mock-providers.test.ts")) continue;
+
+          const content = fs.readFileSync(fullPath, "utf-8");
+          if (
+            content.includes("export const MOCK_PROVIDERS = [") ||
+            content.includes("export const MOCK_PROVIDERS: Provider[] = [")
+          ) {
+            forbiddenFiles.push(fullPath);
+          }
+        }
+      }
+      return forbiddenFiles;
+    }
+
+    const violations = checkDir(srcDir);
+    expect(violations).toEqual([]);
+  });
+
+  it("prohibits imports of the deleted mock-data module across the entire codebase", () => {
+    const srcDir = path.resolve(__dirname, "../../");
+    const violatingImports: string[] = [];
+
+    function scanImports(dir: string) {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name !== "node_modules" && entry.name !== ".next" && entry.name !== ".git") {
+            scanImports(fullPath);
+          }
+        } else if (entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx"))) {
+          if (fullPath.includes("no-mock-providers.test.ts")) continue;
+          const content = fs.readFileSync(fullPath, "utf-8");
+          if (content.includes("mock-data")) {
+            violatingImports.push(fullPath);
+          }
+        }
+      }
+    }
+
+    scanImports(srcDir);
+    expect(violatingImports).toEqual([]);
   });
 });

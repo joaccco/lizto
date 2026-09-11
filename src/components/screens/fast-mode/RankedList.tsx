@@ -8,7 +8,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
-import { formatPriceRange } from "@/lib/mock-data";
+import { formatPriceRange } from "@/lib/format";
 import type { Provider } from "@/lib/types";
 import { cn } from "@/lib/utils";
 

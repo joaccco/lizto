@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { ScreenShell } from "@/components/screens/shared/ScreenShell";
-import { formatPriceRange } from "@/lib/mock-data";
+import { formatPriceRange } from "@/lib/format";
 import type { Provider } from "@/lib/types";
 
 interface RecommendScreenProps {

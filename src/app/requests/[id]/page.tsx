@@ -24,7 +24,7 @@ import { RequestStatusCard } from "@/components/ui/RequestStatusCard";
 import { useToast } from "@/components/ui/Toast";
 import { apiFetch } from "@/lib/api";
 import { ENDPOINTS } from "@/lib/endpoints";
-import { formatPriceRange } from "@/lib/mock-data";
+import { formatPriceRange } from "@/lib/format";
 
 interface ProviderInfo {
   id?: string;
