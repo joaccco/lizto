@@ -28,9 +28,9 @@ import type { BackendProvidersResponse } from "@/lib/types";
 export interface AlternativeProvider {
   id: string | number;
   name: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
   bio?: string;
-  avg_rating?: number;
+  avg_rating?: number | null;
   total_reviews?: number;
   total_jobs_completed?: number;
   specialties?: string[];
@@ -246,13 +246,13 @@ export function RequestStatusCard({
         if (cancelled) return;
         const items = res?.data || [];
         const mapped: AlternativeProvider[] = items.map((p) => ({
-          id: p.id,
+          id: p.uuid || p.id || "",
           name: p.name || `${p.first_name || ""} ${p.last_name || ""}`.trim() || "Profesional",
-          avatar_url: p.avatar_url || p.profile_photo_url,
+          avatar_url: p.avatar_url || p.profile_photo_url || null,
           bio: p.bio,
-          avg_rating: p.rating || null,
-          total_reviews: p.reviews_count || 0,
-          total_jobs_completed: p.completed_jobs_count || 0,
+          avg_rating: p.avg_rating ?? p.rating ?? null,
+          total_reviews: p.total_reviews ?? p.reviews_count ?? 0,
+          total_jobs_completed: p.total_jobs_completed ?? p.completed_jobs_count ?? 0,
           specialties: p.categories?.map((c) => c.name) || (categoryName ? [categoryName] : []),
           response_time: "~10 min",
         }));
@@ -280,7 +280,7 @@ export function RequestStatusCard({
   const handleSelectNewProvider = async (newProvider: AlternativeProvider) => {
     try {
       setCurrentProviderName(newProvider.name);
-      setCurrentProviderAvatar(newProvider.avatar_url);
+      setCurrentProviderAvatar(newProvider.avatar_url ?? undefined);
       setCurrentProviderRating(newProvider.avg_rating || null);
       setCurrentStatus("confirmed");
       setAssignedAt(new Date().toISOString());

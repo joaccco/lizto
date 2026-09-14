@@ -55,7 +55,8 @@ export interface ActiveRequestItem {
     id?: string | null;
     uuid?: string | null;
     name: string;
-    avg_rating?: number;
+    avg_rating?: number | null;
+    total_reviews?: number;
     avatar_url?: string | null;
     is_verified?: boolean;
   } | null;

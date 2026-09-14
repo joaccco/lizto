@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { RankedList } from "@/components/screens/fast-mode/RankedList";
 import { UrgencyBanner } from "@/components/screens/fast-mode/UrgencyBanner";
@@ -11,6 +12,7 @@ import { useFastModeSession } from "@/hooks/useSearchSession";
 import type { ParsedRequest } from "@/lib/types";
 
 export function FastModeScreen() {
+  const router = useRouter();
   const { parsedRequest: defaultParsedRequest } = useFastModeSession();
   const [categorySlug, setCategorySlug] = useState<string | undefined>(undefined);
   const [parsedRequest, setParsedRequest] = useState<ParsedRequest>(defaultParsedRequest);

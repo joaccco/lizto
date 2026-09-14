@@ -9,7 +9,7 @@ export interface Provider {
   categorySlug: string;
   specialties: string[];
   neighborhood: string;
-  rating: number;
+  rating: number | null;
   reviewCount: number;
   jobsCompleted: number;
   responseTime: string;
@@ -99,13 +99,14 @@ export interface BackendCategoryItem {
 }
 
 export interface BackendProvider {
+  id?: string;
   uuid: string;
   name: string;
   avatar_url: string | null;
   bio: string;
   years_experience: number;
   is_verified: boolean;
-  avg_rating: number;
+  avg_rating: number | null;
   total_reviews: number;
   total_jobs_completed: number;
   price_from: number | null;
@@ -114,6 +115,12 @@ export interface BackendProvider {
   next_available_at: string | null;
   distance_km: number | null;
   categories: BackendCategoryItem[];
+  first_name?: string;
+  last_name?: string;
+  profile_photo_url?: string;
+  rating?: number | null;
+  reviews_count?: number;
+  completed_jobs_count?: number;
 }
 
 export interface BackendProvidersResponse {

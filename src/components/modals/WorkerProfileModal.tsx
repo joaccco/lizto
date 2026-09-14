@@ -46,7 +46,7 @@ interface FullProviderProfile {
   category_name?: string;
   specialties?: string[];
   years_experience?: number;
-  avg_rating?: number;
+  avg_rating?: number | null;
   total_reviews?: number;
   total_jobs_completed?: number;
   is_verified?: boolean;
