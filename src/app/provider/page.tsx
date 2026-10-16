@@ -29,6 +29,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { RequestDebugBadge, type RequestDebugInfo } from "@/components/dev/RequestDebugBadge";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
 import { ENDPOINTS } from "@/lib/endpoints";
@@ -50,6 +51,8 @@ const categoryIcons: Record<string, LucideIcon> = {
 };
 
 interface WorkRequestItem {
+  /** Sólo en local y testing. Ver RequestDebugBadge. */
+  _debug?: RequestDebugInfo;
   id: string;
   service_request_id?: string;
   work_id?: string;
@@ -669,6 +672,8 @@ export default function ProviderPage() {
                         key={req.id}
                         className="rounded-[24px] bg-[#131318] border border-white/9 p-5 space-y-4 shadow-sm hover:border-[#8B6BFF]/50 transition"
                       >
+                        <RequestDebugBadge debug={req._debug} />
+
                         {/* Fila superior: Cliente, Rubro y Cuándo Llegó (Tratamiento Secundario) */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-3 min-w-0">

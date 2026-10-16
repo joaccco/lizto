@@ -11,8 +11,10 @@ import {
   ExternalLink,
   Loader2,
   Search,
-  UserCheck
+  UserCheck,
+  MessageSquarePlus
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
@@ -59,6 +61,7 @@ export default function AdminMVUPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Admin Guard
@@ -76,6 +79,18 @@ export default function AdminMVUPage() {
     }
   }, [authLoading, isAuthenticated, user, router]);
 
+  const handleSelectItem = async (item: MVUItem) => {
+    setSelectedItem(item);
+    try {
+      const res = await apiFetch<{ data: MVUItem }>(ENDPOINTS.ADMIN_MVU_DETAIL(item.id));
+      if (res && res.data) {
+        setSelectedItem(res.data);
+      }
+    } catch {
+      // Mantiene item básico
+    }
+  };
+
   const fetchPendingMVUs = async () => {
     try {
       setIsLoading(true);
@@ -83,7 +98,7 @@ export default function AdminMVUPage() {
       if (res && res.data) {
         setItems(res.data);
         if (res.data.length > 0 && !selectedItem) {
-          setSelectedItem(res.data[0]);
+          handleSelectItem(res.data[0]);
         }
       }
     } catch {
@@ -100,15 +115,12 @@ export default function AdminMVUPage() {
   }, [isAuthenticated]);
 
   const handleApprove = async (id: number) => {
-    if (!confirm("¿Confirmar aprobación de verificación profesional (MVU)? El prestador será habilitado para recibir solicitudes.")) {
-      return;
-    }
-
     try {
       setActionLoading(true);
       await apiFetch(ENDPOINTS.ADMIN_MVU_APPROVE(id), { method: "POST" });
       setFeedbackMessage({ type: "success", text: "Prestador verificado exitosamente." });
       setItems((prev) => prev.filter((i) => i.id !== id));
+      setShowApproveModal(false);
       setSelectedItem(null);
     } catch {
       setFeedbackMessage({ type: "error", text: "Error al aprobar la verificación." });
@@ -209,7 +221,7 @@ export default function AdminMVUPage() {
               return (
                 <div
                   key={item.id}
-                  onClick={() => setSelectedItem(item)}
+                  onClick={() => handleSelectItem(item)}
                   className={`p-4 rounded-2xl cursor-pointer border transition ${
                     isSelected
                       ? "bg-[#16161D] border-[#7C5CFF] shadow-[0_0_20px_rgba(124,92,255,0.15)]"
@@ -257,7 +269,7 @@ export default function AdminMVUPage() {
         <div className="lg:col-span-7">
           {selectedItem ? (
             <div className="bg-[#111115] border border-[#26262B] rounded-2xl p-6 md:p-8 flex flex-col gap-6">
-              <div className="flex items-start justify-between border-b border-[#222228] pb-5">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-[#222228] pb-5 gap-4">
                 <div>
                   <span className="text-xs font-mono uppercase tracking-widest text-[#7C5CFF]">
                     Detalle de Verificación #{selectedItem.id}
@@ -270,18 +282,31 @@ export default function AdminMVUPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    href={`/admin/mvu/${selectedItem.id}`}
+                    className="px-3 py-2 rounded-xl border border-[#2E2E38] hover:bg-[#1E1E26] text-white text-xs font-medium transition"
+                  >
+                    Ver Expediente
+                  </Link>
+                  <Link
+                    href={`/admin/mvu/${selectedItem.id}/request-data`}
+                    className="px-3 py-2 rounded-xl border border-[#7C5CFF]/40 hover:bg-[#7C5CFF]/10 text-[#B49DFF] text-xs font-medium flex items-center gap-1.5 transition"
+                  >
+                    <MessageSquarePlus className="w-3.5 h-3.5" />
+                    <span>Pedir Más Datos</span>
+                  </Link>
                   <button
                     disabled={actionLoading}
                     onClick={() => setShowRejectModal(true)}
-                    className="px-4 py-2 rounded-xl border border-[#EF4444]/40 hover:bg-[#EF4444]/10 text-[#EF4444] text-xs font-medium transition disabled:opacity-50"
+                    className="px-3.5 py-2 rounded-xl border border-[#EF4444]/40 hover:bg-[#EF4444]/10 text-[#EF4444] text-xs font-medium transition disabled:opacity-50"
                   >
                     Rechazar
                   </button>
                   <button
                     disabled={actionLoading}
-                    onClick={() => handleApprove(selectedItem.id)}
-                    className="px-5 py-2 rounded-xl bg-[#7C5CFF] hover:bg-[#6A4BE8] text-white text-xs font-semibold shadow-lg shadow-[#7C5CFF]/20 transition disabled:opacity-50"
+                    onClick={() => setShowApproveModal(true)}
+                    className="px-4 py-2 rounded-xl bg-[#7C5CFF] hover:bg-[#6A4BE8] text-white text-xs font-semibold shadow-lg shadow-[#7C5CFF]/20 transition disabled:opacity-50"
                   >
                     Aprobar Verificación
                   </button>
@@ -330,6 +355,7 @@ export default function AdminMVUPage() {
                       href={selectedItem.identity.document_front_url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      referrerPolicy="no-referrer"
                       className="text-xs text-[#7C5CFF] hover:underline flex items-center gap-1 font-mono"
                     >
                       <ExternalLink className="w-3.5 h-3.5" /> Ver DNI Frontal
@@ -340,6 +366,7 @@ export default function AdminMVUPage() {
                       href={selectedItem.identity.selfie_url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      referrerPolicy="no-referrer"
                       className="text-xs text-[#7C5CFF] hover:underline flex items-center gap-1 font-mono"
                     >
                       <ExternalLink className="w-3.5 h-3.5" /> Ver Selfie Biometría
@@ -426,14 +453,57 @@ export default function AdminMVUPage() {
         </div>
       </div>
 
+      {/* Approve Confirmation Modal */}
+      {showApproveModal && selectedItem && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#16161D] border border-[#2E2E38] rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center gap-2.5 text-[#4ADE80] mb-2">
+              <CheckCircle2 className="w-5 h-5" />
+              <h3 className="text-lg font-bold text-white">Confirmar Aprobación de Verificación</h3>
+            </div>
+            <p className="text-xs text-[#D4D4D8] mb-4">
+              ¿Confirmar la verificación profesional de {selectedItem.provider_name || "este prestador"}?
+            </p>
+            <div className="bg-[#102A1E] border border-[#166534] rounded-xl p-3.5 text-xs text-[#86EFAC] space-y-1.5 mb-5">
+              <p className="font-semibold text-white">Consecuencias de esta acción:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>El prestador cambiará a estado verificado formalmente.</li>
+                <li>Quedará inmediatamente habilitado para recibir solicitudes y ofertar en Lizto.</li>
+              </ul>
+            </div>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                disabled={actionLoading}
+                onClick={() => setShowApproveModal(false)}
+                className="px-4 py-2 rounded-xl text-xs text-[#8E8D99] hover:text-white transition"
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={actionLoading}
+                onClick={() => handleApprove(selectedItem.id)}
+                className="px-4 py-2 rounded-xl bg-[#7C5CFF] hover:bg-[#6A4BE8] text-white text-xs font-semibold transition disabled:opacity-50"
+              >
+                {actionLoading ? "Aprobando..." : "Confirmar Aprobación"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Rejection Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#16161D] border border-[#2E2E38] rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <h3 className="text-lg font-bold text-white mb-2">Rechazar Verificación Profesional</h3>
-            <p className="text-xs text-[#8E8D99] mb-4">
+            <p className="text-xs text-[#8E8D99] mb-3">
               Indica el motivo técnico del rechazo. Este mensaje será notificado al prestador.
             </p>
+
+            <div className="bg-[#2D1517] border border-[#991B1B] rounded-xl p-3 text-xs text-[#FCA5A5] mb-4">
+              <p className="font-semibold text-white mb-1">Consecuencias de esta acción:</p>
+              <p>El perfil del profesional quedará revocado en la plataforma y no podrá recibir solicitudes.</p>
+            </div>
 
             <textarea
               value={rejectReason}
